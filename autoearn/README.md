@@ -53,17 +53,55 @@ open http://127.0.0.1:4200
 
 Reset the starting org at any time with `python seed_agents.py --force`.
 
-## Dashboard / API
-- `GET /` — live org chart, message bus feed, activity log, total revenue
+## Dashboard
+A clean, ChatGPT-style web UI at `http://127.0.0.1:4200` with four tabs:
+
+- **Chat** — talk to the organization (or any specific agent). Plain messages get
+  a conversational reply grounded in live org state; messages starting with `/`
+  run **slash commands** (see below). Per-agent selector, chat history persists.
+- **Organization** — the full org chart (Council / Teams / QC) with live status,
+  run counts, and a per-agent detail modal (run now, chat with).
+- **Skills** — install, run, and remove Claude skills.
+- **Activity** — revenue breakdown, live message-bus feed, and activity log.
+
+### Slash commands (work even with no AI key)
+```
+/help                         list all commands
+/agents                       list every agent + run stats
+/revenue                      total and per-source revenue
+/trigger <agent>              run an agent immediately
+/spawn <name> <role> <team> <goal...>   create a new agent
+/kill <agent>                 disable an agent
+/directive <team> <text...>   send a directive into the org
+/skills                       list installed skills
+/skill install <source>       install a skill (path | git URL | .zip URL)
+/skill run <name> <input...>  run a skill
+/skill info|remove <name>     inspect / delete a skill
+/clear                        clear chat history
+```
+
+## Skills — any Claude skill works
+A skill is a folder with a `SKILL.md` (frontmatter `name` + `description`, body =
+instructions) — the standard Claude format. Install at runtime from a **local
+path, git URL, or .zip URL** via the Skills tab, the `/skill install` command, or
+the CTO agent's `install_skill` tool. Agents invoke skills through the
+`use_skill` tool, so the org can grow new capabilities on the fly. A starter
+`seo-article` skill ships in `skills/`.
+
+## API
 - `GET /api/agents` · `GET /api/revenue` · `GET /api/messages` · `GET /api/logs`
+- `POST /api/chat` `{message, agent}` · `GET /api/chat/history` · `DELETE /api/chat`
+- `GET /api/skills` · `POST /api/skills/install` `{source}` · `POST /api/skills/{name}/run` · `DELETE /api/skills/{name}`
 - `POST /api/agents/{name}/trigger` — run an agent now
 - `PUT /api/agents/{name}` — edit a definition live · `POST /api/agents` — spawn one
 
 ## Layout
-- `core/` — AI client, agent loop, message bus, tools, self-modification tools, scheduler
+- `core/` — AI client, agent loop, message bus, tools, self-modification tools,
+  skills engine, chat/slash-commands, scheduler
 - `council/`, `teams/`, `qc/` — agent definition files (live; agents edit these)
+- `skills/` — installed Claude skills (a starter `seo-article` ships here)
 - `output/` — everything agents produce (articles, code, proposals, signals)
-- `dashboard/` — FastAPI app + Alpine.js single-page dashboard
+- `dashboard/` — FastAPI app + Alpine.js ChatGPT-style single-page dashboard
 
 ## Autonomy
 There are **no policy guard rails**. The organization runs indefinitely and

@@ -241,6 +241,34 @@ def _post_telegram(agent: str, message: str = "", **_: Any) -> str:
     return "Posted to Telegram."
 
 
+@tool("list_skills", "list_skills() — list installed Claude skills you can invoke.")
+def _list_skills(agent: str, **_: Any) -> str:
+    from . import skills
+
+    items = [{"name": s["name"], "description": s["description"]} for s in skills.discover()]
+    return json.dumps(items) if items else "No skills installed."
+
+
+@tool("use_skill", "use_skill(name, input) — run an installed Claude skill on the given input and return its output.")
+def _use_skill(agent: str, name: str = "", input: str = "", **_: Any) -> str:
+    from . import skills
+
+    out = skills.run(name, input)
+    db.log_activity(agent, "use_skill", f"{name}: {input[:60]}")
+    return out
+
+
+@tool("install_skill", "install_skill(source) — install a Claude skill from a local path, git URL, or .zip URL.")
+def _install_skill(agent: str, source: str = "", **_: Any) -> str:
+    from . import skills
+
+    try:
+        skill = skills.install(source)
+        return f"Installed skill '{skill['name']}': {skill['description']}"
+    except Exception as exc:  # noqa: BLE001
+        return f"ERROR: could not install skill: {exc}"
+
+
 @tool("post_reddit", "post_reddit(subreddit, title, body) — submit a self-post to a subreddit.")
 def _post_reddit(agent: str, subreddit: str = "", title: str = "", body: str = "", **_: Any) -> str:
     cfg = config.section("reddit")

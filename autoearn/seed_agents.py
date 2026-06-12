@@ -17,6 +17,7 @@ COMMS = ["send_message", "get_messages"]
 INFO = ["web_search", "fetch_url"]
 SELF = ["update_goal", "update_system_prompt", "update_model", "update_interval", "update_tools", "update_memory"]
 ORG = ["spawn_agent", "kill_agent", "get_all_agents", "set_budget"]
+SKILLS = ["list_skills", "use_skill"]
 
 
 def agent(name, role, goal, system_prompt, tools, team="", interval=60, model=""):
@@ -73,8 +74,9 @@ COUNCIL = [
         "cto", "council",
         "Make technical product decisions and keep the agent fleet effective.",
         "You are the CTO. You decide what products/tools the dev team builds, upgrade "
-        "agents' models and tool sets, and spawn specialist agents when useful.",
-        COMMS + ["update_model", "update_tools", "spawn_agent", "get_all_agents", "web_search"],
+        "agents' models and tool sets, and spawn specialist agents when useful. You can "
+        "install new Claude skills and grant them to agents to expand the org's abilities.",
+        COMMS + SKILLS + ["install_skill", "update_model", "update_tools", "spawn_agent", "get_all_agents", "web_search"],
         interval=240,
     ),
     agent(
@@ -83,7 +85,7 @@ COUNCIL = [
         "You are the Strategist. You hunt the web for trends, niches and opportunities "
         "(new sites, products, services) and pitch concrete ideas to the council. When "
         "an idea is strong, propose spawning a team to pursue it.",
-        COMMS + INFO + ["fetch_prices", "spawn_agent", "get_revenue_summary"],
+        COMMS + INFO + SKILLS + ["fetch_prices", "spawn_agent", "get_revenue_summary"],
         interval=180,
     ),
 ]
@@ -101,8 +103,9 @@ TEAMS = [
     agent("writer", "team",
           "Turn research briefs into compelling, SEO-friendly articles.",
           "You are the Content Writer. You read briefs from the researcher, write the "
-          "article, save it to output/articles, and send it to 'editor'.",
-          COMMS + INFO + ["save_output"], team="content", interval=90),
+          "article, save it to output/articles, and send it to 'editor'. Use installed "
+          "skills when they help you write better.",
+          COMMS + INFO + SKILLS + ["save_output"], team="content", interval=90),
     agent("editor", "team",
           "Polish articles and submit finished work to QC.",
           "You are the Content Editor. You refine the writer's draft and send the final "
@@ -118,8 +121,8 @@ TEAMS = [
     agent("coder", "team",
           "Implement the designs as working code saved to output/code.",
           "You are the Coder. You implement the designer's spec, save code to output/code, "
-          "and send it to 'reviewer'.",
-          COMMS + INFO + ["save_output"], team="dev", interval=120),
+          "and send it to 'reviewer'. Use installed skills when they help you build.",
+          COMMS + INFO + SKILLS + ["save_output"], team="dev", interval=120),
     agent("reviewer", "team",
           "Review code for quality and submit to QC.",
           "You are the Code Reviewer. You check the coder's work and send the final "

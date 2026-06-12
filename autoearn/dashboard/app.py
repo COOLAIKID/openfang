@@ -13,14 +13,38 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 
-from core import ai_client, database as db, message_bus
+from core import ai_client, database as db, message_bus, skills
+from core.chat import Chat
 
 TEMPLATE = Path(__file__).resolve().parent / "templates" / "index.html"
+
+
+# Request bodies (module scope so FastAPI/pydantic resolve them as body models).
+class DefinitionPatch(BaseModel):
+    definition: dict
+
+
+class NewAgent(BaseModel):
+    definition: dict
+
+
+class ChatMessage(BaseModel):
+    message: str
+    agent: str = "ceo"
+
+
+class SkillSource(BaseModel):
+    source: str
+
+
+class SkillRun(BaseModel):
+    input: str = ""
 
 
 def create_app(orchestrator) -> FastAPI:
     app = FastAPI(title="AutoEarn", docs_url="/docs")
     manager = orchestrator.manager
+    chat = Chat(orchestrator)
 
     @app.get("/", response_class=HTMLResponse)
     def index() -> str:
@@ -76,9 +100,6 @@ def create_app(orchestrator) -> FastAPI:
         result = orchestrator.trigger_now(name)
         return {"name": name, "result": result}
 
-    class DefinitionPatch(BaseModel):
-        definition: dict
-
     @app.put("/api/agents/{name}")
     def update_agent(name: str, patch: DefinitionPatch) -> dict:
         agent = manager.get(name)
@@ -89,9 +110,6 @@ def create_app(orchestrator) -> FastAPI:
         manager.reschedule(name)
         return {"name": name, "definition": agent.definition}
 
-    class NewAgent(BaseModel):
-        definition: dict
-
     @app.post("/api/agents")
     def create_agent(payload: NewAgent) -> dict:
         d = payload.definition
@@ -101,6 +119,43 @@ def create_app(orchestrator) -> FastAPI:
             raise HTTPException(409, f"agent '{d['name']}' already exists")
         agent = manager.spawn(d, created_by="dashboard")
         return {"name": agent.name, "definition": agent.definition}
+
+    # ---- Chat ----------------------------------------------------------
+    @app.post("/api/chat")
+    def chat_send(payload: ChatMessage) -> dict:
+        return chat.handle(payload.message, agent=payload.agent)
+
+    @app.get("/api/chat/history")
+    def chat_history(limit: int = 100) -> list[dict]:
+        return db.chat_history(limit=limit)
+
+    @app.delete("/api/chat")
+    def chat_clear() -> dict:
+        db.clear_chat()
+        return {"ok": True}
+
+    # ---- Skills --------------------------------------------------------
+    @app.get("/api/skills")
+    def skills_list() -> list[dict]:
+        return skills.discover()
+
+    @app.post("/api/skills/install")
+    def skills_install(payload: SkillSource) -> dict:
+        try:
+            return skills.install(payload.source)
+        except Exception as exc:  # noqa: BLE001
+            raise HTTPException(400, str(exc))
+
+    @app.post("/api/skills/{name}/run")
+    def skills_run(name: str, payload: SkillRun) -> dict:
+        return {"name": name, "output": skills.run(name, payload.input)}
+
+    @app.delete("/api/skills/{name}")
+    def skills_remove(name: str) -> dict:
+        ok = skills.remove(name)
+        if not ok:
+            raise HTTPException(404, f"no such skill '{name}'")
+        return {"ok": True}
 
     @app.get("/api/output")
     def output() -> list[dict]:

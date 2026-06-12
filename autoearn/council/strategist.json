@@ -13,6 +13,8 @@
     "get_messages",
     "web_search",
     "fetch_url",
+    "list_skills",
+    "use_skill",
     "fetch_prices",
     "spawn_agent",
     "get_revenue_summary"

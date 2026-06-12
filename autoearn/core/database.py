@@ -60,6 +60,15 @@ CREATE TABLE IF NOT EXISTS agent_status (
     errors      INTEGER NOT NULL DEFAULT 0
 );
 
+CREATE TABLE IF NOT EXISTS chat (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    role       TEXT NOT NULL,        -- 'user' | 'assistant' | 'system'
+    agent      TEXT,                 -- which agent answered (or was addressed)
+    content    TEXT NOT NULL,
+    kind       TEXT DEFAULT 'text',  -- 'text' | 'command' | 'error'
+    created_at REAL NOT NULL
+);
+
 CREATE INDEX IF NOT EXISTS idx_messages_to ON messages(to_agent, status);
 CREATE INDEX IF NOT EXISTS idx_activity_agent ON activity(agent);
 """
@@ -176,6 +185,34 @@ def all_status() -> dict[str, dict[str, Any]]:
 # --------------------------------------------------------------------------
 # Raw access for the message bus
 # --------------------------------------------------------------------------
+# --------------------------------------------------------------------------
+# Chat history
+# --------------------------------------------------------------------------
+def add_chat(role: str, content: str, agent: str = "", kind: str = "text") -> int:
+    init()
+    with _connect() as conn:
+        cur = conn.execute(
+            "INSERT INTO chat (role, agent, content, kind, created_at) VALUES (?,?,?,?,?)",
+            (role, agent, content, kind, _now()),
+        )
+        return int(cur.lastrowid or 0)
+
+
+def chat_history(limit: int = 100) -> list[dict[str, Any]]:
+    init()
+    with _connect() as conn:
+        rows = conn.execute(
+            "SELECT * FROM chat ORDER BY id DESC LIMIT ?", (limit,)
+        ).fetchall()
+    return [dict(r) for r in reversed(rows)]
+
+
+def clear_chat() -> None:
+    init()
+    with _connect() as conn:
+        conn.execute("DELETE FROM chat")
+
+
 def execute(sql: str, params: Iterable[Any] = ()) -> list[dict[str, Any]]:
     """Run a statement and return rows as dicts (empty for writes)."""
     init()

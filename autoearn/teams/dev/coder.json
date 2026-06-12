@@ -4,7 +4,7 @@
   "role": "team",
   "enabled": true,
   "goal": "Implement the designs as working code saved to output/code.",
-  "system_prompt": "You are the Coder. You implement the designer's spec, save code to output/code, and send it to 'reviewer'.",
+  "system_prompt": "You are the Coder. You implement the designer's spec, save code to output/code, and send it to 'reviewer'. Use installed skills when they help you build.",
   "model_preference": "",
   "interval_minutes": 120,
   "budget_usd": 0.0,
@@ -13,6 +13,8 @@
     "get_messages",
     "web_search",
     "fetch_url",
+    "list_skills",
+    "use_skill",
     "save_output"
   ],
   "memory": {}

@@ -3,84 +3,180 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>AutoEarn — Autonomous AI Organization</title>
+  <title>AutoEarn</title>
   <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
   <style>
-    :root { --bg:#0b0e14; --panel:#141a24; --panel2:#1b2230; --line:#26303f; --txt:#dfe6f0; --mut:#8a97a8; --acc:#4ade80; --warn:#f87171; --gold:#fbbf24; }
-    * { box-sizing:border-box; }
-    body { margin:0; background:var(--bg); color:var(--txt); font:14px/1.5 -apple-system,Segoe UI,Roboto,sans-serif; }
-    header { padding:18px 24px; border-bottom:1px solid var(--line); display:flex; align-items:center; gap:18px; }
-    header h1 { font-size:18px; margin:0; letter-spacing:.5px; }
-    header h1 span { color:var(--acc); }
-    .rev { margin-left:auto; text-align:right; }
-    .rev .big { font-size:24px; font-weight:700; color:var(--gold); }
-    .rev .lbl { font-size:11px; color:var(--mut); text-transform:uppercase; letter-spacing:1px; }
-    .providers { font-size:11px; color:var(--mut); }
-    .providers b { color:var(--acc); }
-    main { display:grid; grid-template-columns: 2fr 1fr; gap:16px; padding:16px 24px; }
-    .col { display:flex; flex-direction:column; gap:16px; }
-    .card { background:var(--panel); border:1px solid var(--line); border-radius:10px; overflow:hidden; }
-    .card h2 { margin:0; padding:12px 16px; font-size:13px; text-transform:uppercase; letter-spacing:1px; color:var(--mut); border-bottom:1px solid var(--line); }
-    .tier { padding:12px 16px; }
-    .tier-label { font-size:11px; color:var(--mut); text-transform:uppercase; letter-spacing:1px; margin:4px 0 8px; }
-    .agents { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:10px; }
-    .agent { background:var(--panel2); border:1px solid var(--line); border-radius:8px; padding:10px; cursor:pointer; transition:.15s; }
-    .agent:hover { border-color:var(--acc); }
-    .agent .name { font-weight:600; display:flex; align-items:center; gap:6px; }
-    .dot { width:8px; height:8px; border-radius:50%; background:var(--mut); }
-    .dot.on { background:var(--acc); } .dot.err { background:var(--warn); } .dot.off { background:#475063; }
-    .agent .meta { font-size:11px; color:var(--mut); margin-top:4px; }
-    .agent .goal { font-size:11px; color:#aeb9c7; margin-top:6px; max-height:32px; overflow:hidden; }
-    .feed { max-height:420px; overflow:auto; }
-    .msg, .log { padding:8px 16px; border-bottom:1px solid var(--line); font-size:12px; }
-    .msg .who { color:var(--acc); } .msg .arrow { color:var(--mut); } .msg .to { color:var(--gold); }
-    .badge { display:inline-block; font-size:10px; padding:1px 6px; border-radius:4px; background:var(--panel2); color:var(--mut); margin-left:6px; }
-    .badge.approval { color:var(--acc); } .badge.rejection { color:var(--warn); } .badge.directive { color:var(--gold); }
-    .log .a { color:var(--mut); } .log .act { color:#9fd5ff; }
-    button { background:var(--panel2); color:var(--txt); border:1px solid var(--line); border-radius:6px; padding:4px 10px; font-size:11px; cursor:pointer; }
-    button:hover { border-color:var(--acc); color:var(--acc); }
-    .modal-bg { position:fixed; inset:0; background:rgba(0,0,0,.6); display:flex; align-items:center; justify-content:center; }
-    .modal { background:var(--panel); border:1px solid var(--line); border-radius:10px; width:min(560px,92vw); max-height:86vh; overflow:auto; }
-    .modal h3 { margin:0; padding:14px 18px; border-bottom:1px solid var(--line); }
-    .modal .body { padding:16px 18px; }
-    .kv { display:grid; grid-template-columns:120px 1fr; gap:6px 12px; font-size:13px; }
-    .kv b { color:var(--mut); font-weight:500; }
-    .tools-list { display:flex; flex-wrap:wrap; gap:4px; margin-top:4px; }
-    .tools-list span { font-size:10px; background:var(--panel2); border:1px solid var(--line); border-radius:4px; padding:1px 6px; }
-    pre { background:var(--bg); padding:10px; border-radius:6px; font-size:11px; overflow:auto; color:#aeb9c7; }
+    :root{
+      --bg:#0d0f12; --side:#15171c; --panel:#1a1d23; --panel2:#21252d; --line:#2a2f38;
+      --txt:#ececf1; --mut:#9099a8; --acc:#10a37f; --acc2:#1bd39a; --user:#2b3340;
+      --gold:#fbbf24; --warn:#f87171; --blue:#60a5fa;
+    }
+    *{box-sizing:border-box;}
+    html,body{height:100%;margin:0;}
+    body{background:var(--bg);color:var(--txt);font:14px/1.55 -apple-system,Segoe UI,Roboto,Helvetica,sans-serif;display:flex;}
+    a{color:var(--acc2);}
+    /* sidebar */
+    .side{width:240px;min-width:240px;background:var(--side);border-right:1px solid var(--line);display:flex;flex-direction:column;padding:14px 10px;}
+    .brand{font-size:18px;font-weight:700;padding:6px 10px 14px;letter-spacing:.3px;}
+    .brand span{color:var(--acc2);}
+    .nav{display:flex;flex-direction:column;gap:2px;}
+    .nav button{display:flex;align-items:center;gap:10px;background:none;border:none;color:var(--mut);text-align:left;padding:10px 12px;border-radius:8px;cursor:pointer;font-size:14px;width:100%;}
+    .nav button:hover{background:var(--panel);color:var(--txt);}
+    .nav button.active{background:var(--panel2);color:var(--txt);}
+    .nav .ico{width:18px;text-align:center;}
+    .side .spacer{flex:1;}
+    .side .stat{padding:10px 12px;border-top:1px solid var(--line);font-size:12px;color:var(--mut);}
+    .side .stat .rev{font-size:20px;font-weight:700;color:var(--gold);}
+    .side .stat b{color:var(--acc2);font-weight:600;}
+    /* main */
+    .main{flex:1;display:flex;flex-direction:column;min-width:0;}
+    .topbar{height:52px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px;padding:0 18px;}
+    .topbar h2{font-size:15px;margin:0;font-weight:600;}
+    .topbar .who{margin-left:auto;font-size:12px;color:var(--mut);}
+    .content{flex:1;overflow:auto;}
+    /* chat */
+    .chat-wrap{max-width:780px;margin:0 auto;padding:24px 18px 120px;}
+    .bubble{display:flex;gap:12px;margin:18px 0;}
+    .bubble .av{width:28px;height:28px;border-radius:6px;flex:none;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;}
+    .bubble.user .av{background:var(--user);color:var(--txt);}
+    .bubble.assistant .av{background:var(--acc);color:#fff;}
+    .bubble .body{flex:1;min-width:0;}
+    .bubble .name{font-size:12px;color:var(--mut);margin-bottom:3px;}
+    .bubble .text{white-space:pre-wrap;word-wrap:break-word;}
+    .bubble.error .text{color:var(--warn);}
+    .bubble.command .text{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:13px;}
+    .text code{background:#0a0c0f;padding:1px 5px;border-radius:4px;font-size:12px;}
+    .text b{color:#fff;}
+    .composer{position:absolute;bottom:0;left:240px;right:0;background:linear-gradient(transparent,var(--bg) 28%);padding:14px 18px 18px;}
+    .composer .inner{max-width:780px;margin:0 auto;display:flex;gap:8px;align-items:flex-end;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:8px 8px 8px 14px;}
+    .composer select{background:var(--panel2);color:var(--txt);border:1px solid var(--line);border-radius:8px;padding:8px;font-size:12px;max-width:120px;}
+    .composer textarea{flex:1;background:none;border:none;color:var(--txt);resize:none;font:14px/1.5 inherit;max-height:160px;outline:none;padding:8px 0;}
+    .composer button{background:var(--acc);color:#fff;border:none;border-radius:9px;width:38px;height:38px;font-size:16px;cursor:pointer;flex:none;}
+    .composer button:disabled{opacity:.4;cursor:default;}
+    .hint{max-width:780px;margin:6px auto 0;font-size:11px;color:var(--mut);text-align:center;}
+    .hint code{background:var(--panel2);padding:1px 5px;border-radius:4px;cursor:pointer;}
+    /* generic cards */
+    .pad{padding:20px;}
+    .grid{display:grid;gap:12px;}
+    .org-tier{margin-bottom:18px;}
+    .org-tier .lbl{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--mut);margin:0 0 8px;}
+    .agents{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;}
+    .agent{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px;cursor:pointer;transition:.15s;}
+    .agent:hover{border-color:var(--acc);}
+    .agent .nm{font-weight:600;display:flex;align-items:center;gap:7px;}
+    .dot{width:8px;height:8px;border-radius:50%;background:var(--mut);}
+    .dot.on{background:var(--acc2);}.dot.err{background:var(--warn);}.dot.off{background:#475063;}
+    .agent .mt{font-size:11px;color:var(--mut);margin-top:4px;}
+    .agent .gl{font-size:11.5px;color:#b9c2d0;margin-top:7px;max-height:48px;overflow:hidden;}
+    .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-bottom:14px;}
+    .card h3{margin:0;padding:12px 16px;font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--mut);border-bottom:1px solid var(--line);}
+    .row{padding:9px 16px;border-bottom:1px solid var(--line);font-size:12.5px;}
+    .row:last-child{border-bottom:none;}
+    .badge{display:inline-block;font-size:10px;padding:1px 6px;border-radius:4px;background:var(--panel2);color:var(--mut);margin-left:6px;}
+    .badge.approval{color:var(--acc2);}.badge.rejection{color:var(--warn);}.badge.directive{color:var(--gold);}
+    .who2{color:var(--acc2);}.to2{color:var(--gold);}.arr{color:var(--mut);}
+    .act{color:var(--blue);}.ag{color:var(--mut);}
+    /* skills */
+    .skill{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px;margin-bottom:10px;}
+    .skill .sn{font-weight:600;font-size:15px;}
+    .skill .sd{color:var(--mut);font-size:13px;margin:4px 0 8px;}
+    .skill .files{font-size:11px;color:var(--mut);}
+    .installbar{display:flex;gap:8px;margin-bottom:16px;}
+    .installbar input{flex:1;background:var(--panel);border:1px solid var(--line);border-radius:9px;color:var(--txt);padding:10px 12px;font-size:13px;outline:none;}
+    button.btn{background:var(--panel2);color:var(--txt);border:1px solid var(--line);border-radius:8px;padding:8px 14px;font-size:13px;cursor:pointer;}
+    button.btn:hover{border-color:var(--acc);color:var(--acc2);}
+    button.btn.primary{background:var(--acc);color:#fff;border-color:var(--acc);}
+    button.btn.danger:hover{border-color:var(--warn);color:var(--warn);}
+    button.btn.sm{padding:5px 10px;font-size:11px;}
+    pre{background:#0a0c0f;padding:10px;border-radius:8px;font-size:11.5px;overflow:auto;color:#b9c2d0;white-space:pre-wrap;}
+    /* modal */
+    .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:50;}
+    .modal{background:var(--panel);border:1px solid var(--line);border-radius:12px;width:min(560px,92vw);max-height:86vh;overflow:auto;}
+    .modal h3{margin:0;padding:14px 18px;border-bottom:1px solid var(--line);font-size:15px;}
+    .modal .b{padding:16px 18px;}
+    .kv{display:grid;grid-template-columns:120px 1fr;gap:6px 12px;font-size:13px;}
+    .kv b{color:var(--mut);font-weight:500;}
+    .tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;}
+    .tags span{font-size:10px;background:var(--panel2);border:1px solid var(--line);border-radius:4px;padding:1px 6px;}
+    .empty{color:var(--mut);padding:30px;text-align:center;}
   </style>
 </head>
 <body x-data="app()" x-init="init()">
-  <header>
-    <h1>Auto<span>Earn</span> · Autonomous AI Organization</h1>
-    <div class="providers">AI providers online: <b x-text="providers.join(', ') || '—'"></b></div>
-    <div class="rev">
-      <div class="big" x-text="'$' + revenue.total_usd?.toFixed(2)"></div>
-      <div class="lbl">total revenue</div>
+  <!-- Sidebar -->
+  <aside class="side">
+    <div class="brand">Auto<span>Earn</span></div>
+    <nav class="nav">
+      <button :class="tab==='chat'&&'active'" @click="tab='chat'"><span class="ico">💬</span> Chat</button>
+      <button :class="tab==='org'&&'active'" @click="tab='org'"><span class="ico">🏢</span> Organization</button>
+      <button :class="tab==='skills'&&'active'" @click="tab='skills'"><span class="ico">🧩</span> Skills</button>
+      <button :class="tab==='activity'&&'active'" @click="tab='activity'"><span class="ico">📊</span> Activity</button>
+    </nav>
+    <div class="spacer"></div>
+    <div class="stat">
+      <div class="rev" x-text="'$'+(revenue.total_usd||0).toFixed(2)"></div>
+      total revenue · <span x-text="agents.length"></span> agents
     </div>
-  </header>
+    <div class="stat">AI online: <b x-text="providers.join(', ')||'—'"></b></div>
+  </aside>
 
-  <main>
-    <div class="col">
-      <div class="card">
-        <h2>Organization · <span x-text="agents.length"></span> agents</h2>
+  <!-- Main -->
+  <div class="main" style="position:relative;">
+    <div class="topbar">
+      <h2 x-text="{chat:'Chat',org:'Organization',skills:'Skills',activity:'Activity'}[tab]"></h2>
+      <div class="who" x-show="tab==='chat'">talking to <b x-text="chatAgent"></b></div>
+    </div>
+
+    <!-- CHAT -->
+    <div class="content" x-show="tab==='chat'" x-ref="chatScroll">
+      <div class="chat-wrap">
+        <template x-if="!messages.length">
+          <div class="empty">
+            <div style="font-size:40px">💬</div>
+            Ask the organization anything, or run a command.<br>
+            Try <code @click="input='/help';send()">/help</code>,
+            <code @click="input='/agents';send()">/agents</code>,
+            <code @click="input='/revenue';send()">/revenue</code>.
+          </div>
+        </template>
+        <template x-for="m in messages" :key="m.id">
+          <div class="bubble" :class="[m.role, m.kind]">
+            <div class="av" x-text="m.role==='user'?'You':(m.agent?m.agent.slice(0,2).toUpperCase():'AE')"></div>
+            <div class="body">
+              <div class="name" x-text="m.role==='user'?'You':(m.agent||'AutoEarn')"></div>
+              <div class="text" x-html="render(m.content)"></div>
+            </div>
+          </div>
+        </template>
+        <template x-if="thinking">
+          <div class="bubble assistant"><div class="av">AE</div><div class="body"><div class="name" x-text="chatAgent"></div><div class="text" style="color:var(--mut)">thinking…</div></div></div>
+        </template>
+      </div>
+    </div>
+    <div class="composer" x-show="tab==='chat'">
+      <div class="inner">
+        <select x-model="chatAgent">
+          <template x-for="a in agents" :key="a.name"><option :value="a.name" x-text="a.name"></option></template>
+        </select>
+        <textarea x-model="input" rows="1" placeholder="Message the organization, or /command…"
+          @keydown.enter.prevent="if(!$event.shiftKey)send()" @input="autosize($event)"></textarea>
+        <button @click="send()" :disabled="thinking||!input.trim()">➤</button>
+      </div>
+      <div class="hint">Enter to send · Shift+Enter for newline · <code @click="input='/';document.querySelector('.composer textarea').focus()">/</code> for commands</div>
+    </div>
+
+    <!-- ORG -->
+    <div class="content" x-show="tab==='org'">
+      <div class="pad">
         <template x-for="tier in ['council','team','qc']" :key="tier">
-          <div class="tier">
-            <div class="tier-label" x-text="tierLabel(tier)"></div>
+          <div class="org-tier">
+            <div class="lbl" x-text="{council:'Council — Strategy',team:'Teams — Execution',qc:'Quality Control'}[tier]"></div>
             <div class="agents">
-              <template x-for="a in agents.filter(x => x.role === tier)" :key="a.name">
-                <div class="agent" @click="open(a)">
-                  <div class="name">
-                    <span class="dot" :class="dotClass(a)"></span>
-                    <span x-text="a.name"></span>
-                  </div>
-                  <div class="meta">
-                    <span x-text="a.team || a.role"></span> ·
-                    <span x-text="a.model"></span> ·
-                    <span x-text="'every ' + a.interval_minutes + 'm'"></span>
-                  </div>
-                  <div class="meta" x-show="a.runs">runs: <span x-text="a.runs"></span> · errors: <span x-text="a.errors"></span></div>
-                  <div class="goal" x-text="a.goal"></div>
+              <template x-for="a in agents.filter(x=>x.role===tier)" :key="a.name">
+                <div class="agent" @click="selected=a">
+                  <div class="nm"><span class="dot" :class="dotClass(a)"></span><span x-text="a.name"></span></div>
+                  <div class="mt"><span x-text="a.team||a.role"></span> · <span x-text="a.model"></span> · every <span x-text="a.interval_minutes"></span>m</div>
+                  <div class="mt" x-show="a.runs">runs <span x-text="a.runs"></span> · errors <span x-text="a.errors"></span></div>
+                  <div class="gl" x-text="a.goal"></div>
                 </div>
               </template>
             </div>
@@ -89,65 +185,80 @@
       </div>
     </div>
 
-    <div class="col">
-      <div class="card">
-        <h2>Message Bus</h2>
-        <div class="feed">
-          <template x-for="m in messages" :key="m.id">
-            <div class="msg">
-              <span class="who" x-text="m.from_agent"></span>
-              <span class="arrow">→</span>
-              <span class="to" x-text="m.to_agent"></span>
-              <span class="badge" :class="m.type" x-text="m.type"></span>
-              <div x-show="m.subject" style="color:var(--mut)" x-text="m.subject"></div>
-            </div>
-          </template>
-          <div x-show="!messages.length" class="msg" style="color:var(--mut)">No messages yet.</div>
+    <!-- SKILLS -->
+    <div class="content" x-show="tab==='skills'">
+      <div class="pad">
+        <div class="installbar">
+          <input x-model="skillSource" placeholder="Install a skill: local path, git URL, or .zip URL" @keydown.enter="installSkill()">
+          <button class="btn primary" @click="installSkill()" :disabled="skillBusy">Install</button>
         </div>
-      </div>
-
-      <div class="card">
-        <h2>Activity Log</h2>
-        <div class="feed">
-          <template x-for="l in logs" :key="l.id">
-            <div class="log">
-              <span class="a" x-text="l.agent"></span>
-              <span class="act" x-text="l.action"></span>
-              <span style="color:var(--mut)" x-text="(l.detail||'').slice(0,80)"></span>
+        <div x-show="skillMsg" class="row" style="border-radius:8px;border:1px solid var(--line);margin-bottom:14px" x-text="skillMsg"></div>
+        <template x-if="!skills.length"><div class="empty">No skills installed yet. Any Claude skill (a folder with SKILL.md) works — paste a path or URL above.</div></template>
+        <template x-for="s in skills" :key="s.name">
+          <div class="skill">
+            <div class="sn" x-text="s.name"></div>
+            <div class="sd" x-text="s.description"></div>
+            <div class="files">files: <span x-text="(s.files||[]).join(', ')||'—'"></span></div>
+            <div style="margin-top:10px;display:flex;gap:8px">
+              <button class="btn sm" @click="runSkill(s.name)">▶ Run</button>
+              <button class="btn sm danger" @click="removeSkill(s.name)">Remove</button>
             </div>
+            <div x-show="skillOut[s.name]" style="margin-top:10px"><pre x-text="skillOut[s.name]"></pre></div>
+          </div>
+        </template>
+      </div>
+    </div>
+
+    <!-- ACTIVITY -->
+    <div class="content" x-show="tab==='activity'">
+      <div class="pad grid" style="grid-template-columns:1fr 1fr">
+        <div>
+          <div class="card">
+            <h3>Revenue</h3>
+            <div class="row"><b x-text="'$'+(revenue.total_usd||0).toFixed(2)"></b> total</div>
+            <template x-for="s in revenue.by_source" :key="s.source">
+              <div class="row"><span class="ag" x-text="s.source||'(unattributed)'"></span> — $<span x-text="s.amount.toFixed(2)"></span></div>
+            </template>
+          </div>
+          <div class="card">
+            <h3>Message Bus</h3>
+            <template x-for="m in busMessages" :key="m.id">
+              <div class="row"><span class="who2" x-text="m.from_agent"></span> <span class="arr">→</span> <span class="to2" x-text="m.to_agent"></span><span class="badge" :class="m.type" x-text="m.type"></span><div class="ag" x-text="m.subject"></div></div>
+            </template>
+            <template x-if="!busMessages.length"><div class="row ag">No messages yet.</div></template>
+          </div>
+        </div>
+        <div class="card">
+          <h3>Activity Log</h3>
+          <template x-for="l in logs" :key="l.id">
+            <div class="row"><span class="ag" x-text="l.agent"></span> <span class="act" x-text="l.action"></span> <span class="ag" x-text="(l.detail||'').slice(0,70)"></span></div>
           </template>
-          <div x-show="!logs.length" class="log" style="color:var(--mut)">No activity yet.</div>
+          <template x-if="!logs.length"><div class="row ag">No activity yet.</div></template>
         </div>
       </div>
     </div>
-  </main>
+  </div>
 
-  <!-- Agent detail modal -->
+  <!-- Agent modal -->
   <template x-if="selected">
     <div class="modal-bg" @click.self="selected=null">
       <div class="modal">
-        <h3 x-text="selected.name + '  ·  ' + selected.role"></h3>
-        <div class="body">
+        <h3 x-text="selected.name+' · '+selected.role"></h3>
+        <div class="b">
           <div class="kv">
             <b>Goal</b><span x-text="selected.goal"></span>
-            <b>Team</b><span x-text="selected.team || '—'"></span>
+            <b>Team</b><span x-text="selected.team||'—'"></span>
             <b>Model</b><span x-text="selected.model"></span>
-            <b>Interval</b><span x-text="selected.interval_minutes + ' min'"></span>
-            <b>Budget</b><span x-text="'$' + selected.budget_usd?.toFixed(2)"></span>
-            <b>Runs / Errors</b><span x-text="selected.runs + ' / ' + selected.errors"></span>
+            <b>Interval</b><span x-text="selected.interval_minutes+' min'"></span>
+            <b>Budget</b><span x-text="'$'+(selected.budget_usd||0).toFixed(2)"></span>
+            <b>Runs / Errors</b><span x-text="selected.runs+' / '+selected.errors"></span>
           </div>
-          <div style="margin-top:12px"><b style="color:var(--mut)">Tools</b>
-            <div class="tools-list">
-              <template x-for="t in selected.tools" :key="t"><span x-text="t"></span></template>
-            </div>
-          </div>
-          <div x-show="selected.last_result" style="margin-top:12px">
-            <b style="color:var(--mut)">Last result</b>
-            <pre x-text="selected.last_result"></pre>
-          </div>
-          <div style="margin-top:14px; display:flex; gap:8px">
-            <button @click="trigger(selected.name)">▶ Run now</button>
-            <button @click="selected=null">Close</button>
+          <div style="margin-top:12px"><b class="ag">Tools</b><div class="tags"><template x-for="t in selected.tools" :key="t"><span x-text="t"></span></template></div></div>
+          <div x-show="selected.last_result" style="margin-top:12px"><b class="ag">Last result</b><pre x-text="selected.last_result"></pre></div>
+          <div style="margin-top:14px;display:flex;gap:8px">
+            <button class="btn primary" @click="trigger(selected.name)">▶ Run now</button>
+            <button class="btn" @click="chatAgent=selected.name;tab='chat';selected=null">💬 Chat with</button>
+            <button class="btn" @click="selected=null">Close</button>
           </div>
         </div>
       </div>
@@ -155,25 +266,60 @@
   </template>
 
   <script>
-    function app() {
+    function app(){
       return {
-        agents: [], messages: [], logs: [], revenue: { total_usd: 0 }, providers: [], selected: null,
-        init() { this.refresh(); setInterval(() => this.refresh(), 5000); },
-        async refresh() {
-          const [a, m, l, r, h] = await Promise.all([
+        tab:'chat', agents:[], messages:[], busMessages:[], logs:[], revenue:{total_usd:0,by_source:[]},
+        providers:[], selected:null, input:'', chatAgent:'ceo', thinking:false,
+        skills:[], skillSource:'', skillMsg:'', skillBusy:false, skillOut:{},
+        init(){ this.refresh(); this.loadChat(); this.loadSkills(); setInterval(()=>this.refresh(),5000); },
+        async refresh(){
+          const [a,r,b,l,h] = await Promise.all([
             fetch('/api/agents').then(x=>x.json()),
-            fetch('/api/messages?limit=40').then(x=>x.json()),
-            fetch('/api/logs?limit=50').then(x=>x.json()),
             fetch('/api/revenue').then(x=>x.json()),
+            fetch('/api/messages?limit=30').then(x=>x.json()),
+            fetch('/api/logs?limit=40').then(x=>x.json()),
             fetch('/api/health').then(x=>x.json()),
           ]);
-          this.agents = a; this.messages = m; this.logs = l; this.revenue = r; this.providers = h.providers || [];
-          if (this.selected) this.selected = a.find(x => x.name === this.selected.name) || this.selected;
+          this.agents=a; this.revenue=r; this.busMessages=b; this.logs=l; this.providers=h.providers||[];
+          if(this.selected) this.selected=a.find(x=>x.name===this.selected.name)||this.selected;
         },
-        tierLabel(t){ return {council:'Council — Strategy', team:'Teams — Execution', qc:'Quality Control'}[t]; },
-        dotClass(a){ if(!a.enabled) return 'off'; if(a.errors > 0 && a.last_result?.startsWith('ERROR')) return 'err'; return a.runs ? 'on' : ''; },
-        open(a){ this.selected = a; },
-        async trigger(name){ await fetch('/api/agents/'+name+'/trigger', {method:'POST'}); setTimeout(()=>this.refresh(), 800); },
+        async loadChat(){ this.messages=await fetch('/api/chat/history?limit=100').then(x=>x.json()); this.scrollChat(); },
+        async loadSkills(){ this.skills=await fetch('/api/skills').then(x=>x.json()); },
+        async send(){
+          const text=this.input.trim(); if(!text||this.thinking) return;
+          this.input=''; this.thinking=true;
+          this.messages.push({id:'tmp'+Date.now(),role:'user',content:text,kind:'text'});
+          this.scrollChat();
+          try{
+            await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:text,agent:this.chatAgent})});
+          }finally{ this.thinking=false; await this.loadChat(); if(text.startsWith('/'))this.loadSkills(),this.refresh(); }
+        },
+        render(t){
+          if(!t) return '';
+          let h=t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+          h=h.replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/`([^`]+)`/g,'<code>$1</code>');
+          return h;
+        },
+        scrollChat(){ this.$nextTick(()=>{ const el=this.$refs.chatScroll; if(el)el.scrollTop=el.scrollHeight; }); },
+        autosize(e){ e.target.style.height='auto'; e.target.style.height=Math.min(e.target.scrollHeight,160)+'px'; },
+        dotClass(a){ if(!a.enabled)return'off'; if(a.errors>0&&(a.last_result||'').startsWith('ERROR'))return'err'; return a.runs?'on':''; },
+        async trigger(n){ await fetch('/api/agents/'+n+'/trigger',{method:'POST'}); setTimeout(()=>this.refresh(),800); },
+        async installSkill(){
+          if(!this.skillSource.trim())return; this.skillBusy=true; this.skillMsg='Installing…';
+          try{
+            const r=await fetch('/api/skills/install',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({source:this.skillSource.trim()})});
+            const d=await r.json();
+            this.skillMsg = r.ok ? ('Installed '+d.name) : ('Error: '+(d.detail||'failed'));
+            if(r.ok){ this.skillSource=''; this.loadSkills(); }
+          }catch(e){ this.skillMsg='Error: '+e; } finally{ this.skillBusy=false; }
+        },
+        async runSkill(n){
+          const inp=prompt('Input for skill "'+n+'":','')||'';
+          this.skillOut[n]='Running…';
+          const r=await fetch('/api/skills/'+n+'/run',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({input:inp})});
+          const d=await r.json(); this.skillOut[n]=d.output;
+        },
+        async removeSkill(n){ if(!confirm('Remove skill "'+n+'"?'))return; await fetch('/api/skills/'+n,{method:'DELETE'}); this.loadSkills(); },
       };
     }
   </script>
