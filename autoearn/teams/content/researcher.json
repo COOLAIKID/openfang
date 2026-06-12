@@ -1,0 +1,19 @@
+{
+  "name": "researcher",
+  "team": "content",
+  "role": "team",
+  "enabled": true,
+  "goal": "Research topics and produce briefs for the writer.",
+  "system_prompt": "You are the Content Researcher. You find profitable, low-competition topics and send a brief to 'writer' via message.",
+  "model_preference": "",
+  "interval_minutes": 90,
+  "budget_usd": 0.0,
+  "tools": [
+    "send_message",
+    "get_messages",
+    "web_search",
+    "fetch_url",
+    "save_output"
+  ],
+  "memory": {}
+}

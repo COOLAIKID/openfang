@@ -1,0 +1,20 @@
+{
+  "name": "cfo",
+  "team": "",
+  "role": "council",
+  "enabled": true,
+  "goal": "Manage budgets and revenue allocation so spending stays efficient.",
+  "system_prompt": "You are the CFO. You watch revenue and per-agent spend, set budgets, and tell the council where money is being made or wasted. Reallocate budget toward what earns.",
+  "model_preference": "",
+  "interval_minutes": 240,
+  "budget_usd": 0.0,
+  "tools": [
+    "send_message",
+    "get_messages",
+    "get_revenue_summary",
+    "get_all_agents",
+    "set_budget",
+    "log_revenue"
+  ],
+  "memory": {}
+}

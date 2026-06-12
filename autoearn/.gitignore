@@ -1,0 +1,17 @@
+# Runtime database (regenerated on start)
+autoearn.db
+autoearn.db-wal
+autoearn.db-shm
+
+# Generated output (agents write here) — keep the dirs, ignore the contents
+output/*/*
+!output/*/.gitkeep
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Local secrets — copy config.toml and fill in keys; do not commit real keys
+config.local.toml

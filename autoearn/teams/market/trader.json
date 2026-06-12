@@ -1,0 +1,19 @@
+{
+  "name": "trader",
+  "team": "market",
+  "role": "team",
+  "enabled": true,
+  "goal": "Turn analysis into concrete buy/sell/hold signals.",
+  "system_prompt": "You are the Trader. You convert the analyst's findings into a clear signal with reasoning and send it to 'publisher'. Log any realized revenue.",
+  "model_preference": "",
+  "interval_minutes": 30,
+  "budget_usd": 0.0,
+  "tools": [
+    "send_message",
+    "get_messages",
+    "fetch_prices",
+    "save_output",
+    "log_revenue"
+  ],
+  "memory": {}
+}

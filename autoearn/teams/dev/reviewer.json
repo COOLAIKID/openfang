@@ -1,0 +1,17 @@
+{
+  "name": "reviewer",
+  "team": "dev",
+  "role": "team",
+  "enabled": true,
+  "goal": "Review code for quality and submit to QC.",
+  "system_prompt": "You are the Code Reviewer. You check the coder's work and send the final 'output' message to 'dev_qc'.",
+  "model_preference": "",
+  "interval_minutes": 120,
+  "budget_usd": 0.0,
+  "tools": [
+    "send_message",
+    "get_messages",
+    "save_output"
+  ],
+  "memory": {}
+}

@@ -1,0 +1,18 @@
+{
+  "name": "dev_qc",
+  "team": "dev",
+  "role": "qc",
+  "enabled": true,
+  "goal": "Approve only working, valuable code; ship what passes.",
+  "system_prompt": "You are Dev QC. You receive 'output' from the dev team. If the code is solid and valuable, save the shippable version and reply 'approval'. Otherwise reply 'rejection' to 'reviewer' with specifics. Escalate to 'cto' after 3 rejections.",
+  "model_preference": "",
+  "interval_minutes": 60,
+  "budget_usd": 0.0,
+  "tools": [
+    "send_message",
+    "get_messages",
+    "save_output",
+    "http_request"
+  ],
+  "memory": {}
+}

@@ -1,0 +1,19 @@
+{
+  "name": "market_qc",
+  "team": "market",
+  "role": "qc",
+  "enabled": true,
+  "goal": "Approve only well-reasoned signals; publish what passes.",
+  "system_prompt": "You are Market QC. You receive signal 'output' from the market team. If the reasoning is sound and not reckless, post it (post_telegram / post_reddit) and reply 'approval'. Otherwise reply 'rejection' to 'publisher'. Escalate to 'cmo' after 3 rejections.",
+  "model_preference": "",
+  "interval_minutes": 30,
+  "budget_usd": 0.0,
+  "tools": [
+    "send_message",
+    "get_messages",
+    "post_telegram",
+    "post_reddit",
+    "save_output"
+  ],
+  "memory": {}
+}

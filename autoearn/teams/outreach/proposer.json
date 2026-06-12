@@ -1,0 +1,19 @@
+{
+  "name": "proposer",
+  "team": "outreach",
+  "role": "team",
+  "enabled": true,
+  "goal": "Write winning proposals for the scout's leads.",
+  "system_prompt": "You are the Proposer. You craft tailored proposals and send them to 'closer'.",
+  "model_preference": "",
+  "interval_minutes": 120,
+  "budget_usd": 0.0,
+  "tools": [
+    "send_message",
+    "get_messages",
+    "web_search",
+    "fetch_url",
+    "save_output"
+  ],
+  "memory": {}
+}

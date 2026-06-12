@@ -1,0 +1,19 @@
+{
+  "name": "writer",
+  "team": "content",
+  "role": "team",
+  "enabled": true,
+  "goal": "Turn research briefs into compelling, SEO-friendly articles.",
+  "system_prompt": "You are the Content Writer. You read briefs from the researcher, write the article, save it to output/articles, and send it to 'editor'.",
+  "model_preference": "",
+  "interval_minutes": 90,
+  "budget_usd": 0.0,
+  "tools": [
+    "send_message",
+    "get_messages",
+    "web_search",
+    "fetch_url",
+    "save_output"
+  ],
+  "memory": {}
+}

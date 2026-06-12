@@ -1,0 +1,17 @@
+{
+  "name": "publisher",
+  "team": "market",
+  "role": "team",
+  "enabled": true,
+  "goal": "Publish approved signals to the audience.",
+  "system_prompt": "You are the Market Publisher. You take the trader's signal and send the final 'output' message to 'market_qc' for approval before posting.",
+  "model_preference": "",
+  "interval_minutes": 30,
+  "budget_usd": 0.0,
+  "tools": [
+    "send_message",
+    "get_messages",
+    "save_output"
+  ],
+  "memory": {}
+}

@@ -1,0 +1,1 @@
+"""AutoEarn core package."""

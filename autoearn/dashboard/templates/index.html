@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AutoEarn — Autonomous AI Organization</title>
+  <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+  <style>
+    :root { --bg:#0b0e14; --panel:#141a24; --panel2:#1b2230; --line:#26303f; --txt:#dfe6f0; --mut:#8a97a8; --acc:#4ade80; --warn:#f87171; --gold:#fbbf24; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--bg); color:var(--txt); font:14px/1.5 -apple-system,Segoe UI,Roboto,sans-serif; }
+    header { padding:18px 24px; border-bottom:1px solid var(--line); display:flex; align-items:center; gap:18px; }
+    header h1 { font-size:18px; margin:0; letter-spacing:.5px; }
+    header h1 span { color:var(--acc); }
+    .rev { margin-left:auto; text-align:right; }
+    .rev .big { font-size:24px; font-weight:700; color:var(--gold); }
+    .rev .lbl { font-size:11px; color:var(--mut); text-transform:uppercase; letter-spacing:1px; }
+    .providers { font-size:11px; color:var(--mut); }
+    .providers b { color:var(--acc); }
+    main { display:grid; grid-template-columns: 2fr 1fr; gap:16px; padding:16px 24px; }
+    .col { display:flex; flex-direction:column; gap:16px; }
+    .card { background:var(--panel); border:1px solid var(--line); border-radius:10px; overflow:hidden; }
+    .card h2 { margin:0; padding:12px 16px; font-size:13px; text-transform:uppercase; letter-spacing:1px; color:var(--mut); border-bottom:1px solid var(--line); }
+    .tier { padding:12px 16px; }
+    .tier-label { font-size:11px; color:var(--mut); text-transform:uppercase; letter-spacing:1px; margin:4px 0 8px; }
+    .agents { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:10px; }
+    .agent { background:var(--panel2); border:1px solid var(--line); border-radius:8px; padding:10px; cursor:pointer; transition:.15s; }
+    .agent:hover { border-color:var(--acc); }
+    .agent .name { font-weight:600; display:flex; align-items:center; gap:6px; }
+    .dot { width:8px; height:8px; border-radius:50%; background:var(--mut); }
+    .dot.on { background:var(--acc); } .dot.err { background:var(--warn); } .dot.off { background:#475063; }
+    .agent .meta { font-size:11px; color:var(--mut); margin-top:4px; }
+    .agent .goal { font-size:11px; color:#aeb9c7; margin-top:6px; max-height:32px; overflow:hidden; }
+    .feed { max-height:420px; overflow:auto; }
+    .msg, .log { padding:8px 16px; border-bottom:1px solid var(--line); font-size:12px; }
+    .msg .who { color:var(--acc); } .msg .arrow { color:var(--mut); } .msg .to { color:var(--gold); }
+    .badge { display:inline-block; font-size:10px; padding:1px 6px; border-radius:4px; background:var(--panel2); color:var(--mut); margin-left:6px; }
+    .badge.approval { color:var(--acc); } .badge.rejection { color:var(--warn); } .badge.directive { color:var(--gold); }
+    .log .a { color:var(--mut); } .log .act { color:#9fd5ff; }
+    button { background:var(--panel2); color:var(--txt); border:1px solid var(--line); border-radius:6px; padding:4px 10px; font-size:11px; cursor:pointer; }
+    button:hover { border-color:var(--acc); color:var(--acc); }
+    .modal-bg { position:fixed; inset:0; background:rgba(0,0,0,.6); display:flex; align-items:center; justify-content:center; }
+    .modal { background:var(--panel); border:1px solid var(--line); border-radius:10px; width:min(560px,92vw); max-height:86vh; overflow:auto; }
+    .modal h3 { margin:0; padding:14px 18px; border-bottom:1px solid var(--line); }
+    .modal .body { padding:16px 18px; }
+    .kv { display:grid; grid-template-columns:120px 1fr; gap:6px 12px; font-size:13px; }
+    .kv b { color:var(--mut); font-weight:500; }
+    .tools-list { display:flex; flex-wrap:wrap; gap:4px; margin-top:4px; }
+    .tools-list span { font-size:10px; background:var(--panel2); border:1px solid var(--line); border-radius:4px; padding:1px 6px; }
+    pre { background:var(--bg); padding:10px; border-radius:6px; font-size:11px; overflow:auto; color:#aeb9c7; }
+  </style>
+</head>
+<body x-data="app()" x-init="init()">
+  <header>
+    <h1>Auto<span>Earn</span> · Autonomous AI Organization</h1>
+    <div class="providers">AI providers online: <b x-text="providers.join(', ') || '—'"></b></div>
+    <div class="rev">
+      <div class="big" x-text="'$' + revenue.total_usd?.toFixed(2)"></div>
+      <div class="lbl">total revenue</div>
+    </div>
+  </header>
+
+  <main>
+    <div class="col">
+      <div class="card">
+        <h2>Organization · <span x-text="agents.length"></span> agents</h2>
+        <template x-for="tier in ['council','team','qc']" :key="tier">
+          <div class="tier">
+            <div class="tier-label" x-text="tierLabel(tier)"></div>
+            <div class="agents">
+              <template x-for="a in agents.filter(x => x.role === tier)" :key="a.name">
+                <div class="agent" @click="open(a)">
+                  <div class="name">
+                    <span class="dot" :class="dotClass(a)"></span>
+                    <span x-text="a.name"></span>
+                  </div>
+                  <div class="meta">
+                    <span x-text="a.team || a.role"></span> ·
+                    <span x-text="a.model"></span> ·
+                    <span x-text="'every ' + a.interval_minutes + 'm'"></span>
+                  </div>
+                  <div class="meta" x-show="a.runs">runs: <span x-text="a.runs"></span> · errors: <span x-text="a.errors"></span></div>
+                  <div class="goal" x-text="a.goal"></div>
+                </div>
+              </template>
+            </div>
+          </div>
+        </template>
+      </div>
+    </div>
+
+    <div class="col">
+      <div class="card">
+        <h2>Message Bus</h2>
+        <div class="feed">
+          <template x-for="m in messages" :key="m.id">
+            <div class="msg">
+              <span class="who" x-text="m.from_agent"></span>
+              <span class="arrow">→</span>
+              <span class="to" x-text="m.to_agent"></span>
+              <span class="badge" :class="m.type" x-text="m.type"></span>
+              <div x-show="m.subject" style="color:var(--mut)" x-text="m.subject"></div>
+            </div>
+          </template>
+          <div x-show="!messages.length" class="msg" style="color:var(--mut)">No messages yet.</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Activity Log</h2>
+        <div class="feed">
+          <template x-for="l in logs" :key="l.id">
+            <div class="log">
+              <span class="a" x-text="l.agent"></span>
+              <span class="act" x-text="l.action"></span>
+              <span style="color:var(--mut)" x-text="(l.detail||'').slice(0,80)"></span>
+            </div>
+          </template>
+          <div x-show="!logs.length" class="log" style="color:var(--mut)">No activity yet.</div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Agent detail modal -->
+  <template x-if="selected">
+    <div class="modal-bg" @click.self="selected=null">
+      <div class="modal">
+        <h3 x-text="selected.name + '  ·  ' + selected.role"></h3>
+        <div class="body">
+          <div class="kv">
+            <b>Goal</b><span x-text="selected.goal"></span>
+            <b>Team</b><span x-text="selected.team || '—'"></span>
+            <b>Model</b><span x-text="selected.model"></span>
+            <b>Interval</b><span x-text="selected.interval_minutes + ' min'"></span>
+            <b>Budget</b><span x-text="'$' + selected.budget_usd?.toFixed(2)"></span>
+            <b>Runs / Errors</b><span x-text="selected.runs + ' / ' + selected.errors"></span>
+          </div>
+          <div style="margin-top:12px"><b style="color:var(--mut)">Tools</b>
+            <div class="tools-list">
+              <template x-for="t in selected.tools" :key="t"><span x-text="t"></span></template>
+            </div>
+          </div>
+          <div x-show="selected.last_result" style="margin-top:12px">
+            <b style="color:var(--mut)">Last result</b>
+            <pre x-text="selected.last_result"></pre>
+          </div>
+          <div style="margin-top:14px; display:flex; gap:8px">
+            <button @click="trigger(selected.name)">▶ Run now</button>
+            <button @click="selected=null">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <script>
+    function app() {
+      return {
+        agents: [], messages: [], logs: [], revenue: { total_usd: 0 }, providers: [], selected: null,
+        init() { this.refresh(); setInterval(() => this.refresh(), 5000); },
+        async refresh() {
+          const [a, m, l, r, h] = await Promise.all([
+            fetch('/api/agents').then(x=>x.json()),
+            fetch('/api/messages?limit=40').then(x=>x.json()),
+            fetch('/api/logs?limit=50').then(x=>x.json()),
+            fetch('/api/revenue').then(x=>x.json()),
+            fetch('/api/health').then(x=>x.json()),
+          ]);
+          this.agents = a; this.messages = m; this.logs = l; this.revenue = r; this.providers = h.providers || [];
+          if (this.selected) this.selected = a.find(x => x.name === this.selected.name) || this.selected;
+        },
+        tierLabel(t){ return {council:'Council — Strategy', team:'Teams — Execution', qc:'Quality Control'}[t]; },
+        dotClass(a){ if(!a.enabled) return 'off'; if(a.errors > 0 && a.last_result?.startsWith('ERROR')) return 'err'; return a.runs ? 'on' : ''; },
+        open(a){ this.selected = a; },
+        async trigger(name){ await fetch('/api/agents/'+name+'/trigger', {method:'POST'}); setTimeout(()=>this.refresh(), 800); },
+      };
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,35 @@
+# AutoEarn configuration.
+# Fill in whatever you have. Empty values disable the related tool/provider,
+# and agents will route around what is missing.
+
+[ai]
+# Free AI providers, tried in priority order. Ollama is the offline fallback.
+groq_api_key = ""
+gemini_api_key = ""
+huggingface_api_key = ""
+mistral_api_key = ""
+ollama_base_url = "http://localhost:11434"
+ollama_model = "llama3"
+
+[server]
+host = "127.0.0.1"
+port = 4200
+
+[wordpress]
+url = ""
+username = ""
+password = ""
+
+[medium]
+token = ""
+
+[telegram]
+bot_token = ""
+channel_id = ""
+
+[reddit]
+client_id = ""
+client_secret = ""
+username = ""
+password = ""
+user_agent = "autoearn/0.1"
