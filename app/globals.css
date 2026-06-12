@@ -1,0 +1,82 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* GrowthOS design tokens — see docs/DESIGN_SYSTEM.md */
+    --background: 0 0% 100%; /* #FFFFFF */
+    --foreground: 222 47% 11%; /* #0F172A */
+    --surface: 210 40% 98%; /* #F8FAFC */
+
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    --primary: 221 83% 53%; /* #2563EB */
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 222 47% 11%; /* #0F172A */
+    --secondary-foreground: 210 40% 98%;
+
+    --accent: 173 80% 40%; /* #14B8A6 */
+    --accent-foreground: 0 0% 100%;
+
+    --success: 142 71% 45%; /* #22C55E */
+    --success-foreground: 0 0% 100%;
+
+    --warning: 38 92% 50%; /* #F59E0B */
+    --warning-foreground: 222 47% 11%;
+
+    --destructive: 0 84% 60%; /* #EF4444 */
+    --destructive-foreground: 210 40% 98%;
+
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%; /* #64748B */
+
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 221 83% 53%;
+
+    --radius: 0.625rem;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "cv11", "ss01";
+    text-rendering: optimizeLegibility;
+  }
+
+  ::selection {
+    @apply bg-primary/15 text-foreground;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  .bg-grid {
+    background-image: linear-gradient(
+        to right,
+        hsl(214 32% 91% / 0.5) 1px,
+        transparent 1px
+      ),
+      linear-gradient(to bottom, hsl(214 32% 91% / 0.5) 1px, transparent 1px);
+    background-size: 32px 32px;
+  }
+  .mask-fade-bottom {
+    mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
+  }
+  .scrollbar-none {
+    scrollbar-width: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+}
