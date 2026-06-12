@@ -86,6 +86,7 @@ class Agent:
         try:
             observation = self._observe()
             action = self._reason(observation)
+            self._log_plan(action)          # announce intention before acting
             result = self._act(action)
             self._reflect(observation, action, result)
             summary = f"{action.get('tool', 'noop')} -> {result[:160]}"
@@ -149,8 +150,29 @@ If no useful action exists, use {{"tool": "noop", "args": {{}}}}."""
         if not isinstance(decision, dict) or "tool" not in decision:
             decision = {"tool": "noop", "args": {}, "reasoning": "no valid decision"}
         decision.setdefault("args", {})
-        db.log_activity(self.name, "reason", decision.get("reasoning", "")[:200])
         return decision
+
+    # ------------------------------------------------------------------
+    # Phase 2.5 — plan (log intention before acting, visible in dashboard)
+    # ------------------------------------------------------------------
+    def _log_plan(self, action: dict[str, Any]) -> None:
+        """Log a human-readable summary of what the agent is about to do."""
+        tool_name = action.get("tool", "noop")
+        reasoning = action.get("reasoning", "")
+        args = action.get("args") or {}
+
+        if tool_name == "noop":
+            detail = "No action needed — waiting for the next opportunity."
+        else:
+            # Summarise args: up to 4 key=value pairs, values capped at 40 chars
+            arg_parts = [
+                f"{k}={str(v)[:40]!r}" for k, v in list(args.items())[:4]
+            ]
+            detail = f"→ {tool_name}({', '.join(arg_parts)})"
+            if reasoning:
+                detail += f"  [{reasoning}]"
+
+        db.log_activity(self.name, "plan", detail[:500])
 
     # ------------------------------------------------------------------
     # Phase 3 — act

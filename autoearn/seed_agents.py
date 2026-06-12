@@ -23,6 +23,30 @@ SELF = ["update_goal", "update_system_prompt", "update_model", "update_interval"
 ORG = ["spawn_agent", "kill_agent", "get_all_agents", "set_budget"]
 SKILLS = ["list_skills", "use_skill"]
 
+# Computer use: headless browser (works on any server)
+BROWSER = [
+    "browser_open", "browser_url", "browser_title",
+    "browser_click", "browser_type", "browser_press",
+    "browser_scroll", "browser_text", "browser_links",
+    "browser_screenshot", "browser_js", "browser_wait",
+    "browser_fill_form", "browser_close",
+]
+
+# Desktop control (requires DISPLAY — tools degrade gracefully on headless servers)
+DESKTOP = [
+    "screenshot", "screen_size",
+    "mouse_move", "mouse_click", "mouse_double_click", "mouse_right_click",
+    "mouse_drag", "mouse_scroll", "get_mouse_pos",
+    "keyboard_type", "keyboard_press", "keyboard_shortcut", "keyboard_write_line",
+]
+
+# Per-agent isolated Linux containers via Docker
+SANDBOX = [
+    "sandbox_exec", "sandbox_install", "sandbox_browse",
+    "sandbox_write", "sandbox_read", "sandbox_list",
+    "sandbox_status", "sandbox_destroy", "sandbox_rebuild",
+]
+
 
 def agent(name, role, goal, system_prompt, tools, team="", interval=60, model=""):
     return {
@@ -79,8 +103,10 @@ COUNCIL = [
         "Make technical product decisions and keep the agent fleet effective.",
         "You are the CTO. You decide what products/tools the dev team builds, upgrade "
         "agents' models and tool sets, and spawn specialist agents when useful. You can "
-        "install new Claude skills and grant them to agents to expand the org's abilities.",
-        COMMS + SKILLS + ["install_skill", "update_model", "update_tools", "spawn_agent", "get_all_agents", "web_search"],
+        "install new Claude skills and grant them to agents to expand the org's abilities. "
+        "You have access to per-agent Docker sandboxes (sandbox_*) and a headless browser "
+        "(browser_*) to test and research technical decisions hands-on.",
+        COMMS + SKILLS + BROWSER + SANDBOX + ["install_skill", "update_model", "update_tools", "spawn_agent", "get_all_agents", "web_search"],
         interval=240,
     ),
     agent(
@@ -102,8 +128,9 @@ TEAMS = [
     agent("researcher", "team",
           "Research topics and produce briefs for the writer.",
           "You are the Content Researcher. You find profitable, low-competition topics "
-          "and send a brief to 'writer' via message.",
-          COMMS + INFO + RESEARCH + ["save_output"], team="content", interval=90),
+          "and send a brief to 'writer' via message. Use the browser_* tools to visit "
+          "sites and gather information directly from web pages.",
+          COMMS + INFO + RESEARCH + BROWSER + ["save_output"], team="content", interval=90),
     agent("writer", "team",
           "Turn research briefs into compelling, SEO-friendly articles.",
           "You are the Content Writer. You read briefs from the researcher, write the "
@@ -125,8 +152,10 @@ TEAMS = [
     agent("coder", "team",
           "Implement the designs as working code saved to output/code.",
           "You are the Coder. You implement the designer's spec, save code to output/code, "
-          "and send it to 'reviewer'. Use installed skills when they help you build.",
-          COMMS + INFO + SKILLS + FILES + ["save_output"], team="dev", interval=120),
+          "and send it to 'reviewer'. Use installed skills when they help you build. "
+          "Use the sandbox_* tools to run, test, and iterate on code in an isolated "
+          "Linux container. Use browser_* tools to research APIs and documentation.",
+          COMMS + INFO + SKILLS + FILES + BROWSER + SANDBOX + ["save_output"], team="dev", interval=120),
     agent("reviewer", "team",
           "Review code for quality and submit to QC.",
           "You are the Code Reviewer. You check the coder's work and send the final "
@@ -137,8 +166,9 @@ TEAMS = [
     agent("analyst", "team",
           "Analyze markets and crypto prices for actionable signals.",
           "You are the Market Analyst. You pull prices and news, analyze trends, and send "
-          "findings to 'trader'.",
-          COMMS + INFO + MARKET + ["hacker_news", "save_output"], team="market", interval=30),
+          "findings to 'trader'. Use browser_* tools to visit financial sites and extract "
+          "live data and sentiment directly from web pages.",
+          COMMS + INFO + MARKET + BROWSER + ["hacker_news", "save_output"], team="market", interval=30),
     agent("trader", "team",
           "Turn analysis into concrete buy/sell/hold signals.",
           "You are the Trader. You convert the analyst's findings into a clear signal with "
@@ -154,8 +184,9 @@ TEAMS = [
     agent("scout", "team",
           "Find freelance gigs and leads worth pursuing.",
           "You are the Outreach Scout. You search job boards and the web for gigs/leads and "
-          "send promising ones to 'proposer'.",
-          COMMS + INFO + ["save_output"], team="outreach", interval=120),
+          "send promising ones to 'proposer'. Use browser_* tools to browse job boards "
+          "(Upwork, Freelancer, Fiverr, LinkedIn) and extract real listings.",
+          COMMS + INFO + BROWSER + ["save_output"], team="outreach", interval=120),
     agent("proposer", "team",
           "Write winning proposals for the scout's leads.",
           "You are the Proposer. You craft tailored proposals and send them to 'closer'.",

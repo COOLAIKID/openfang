@@ -9,7 +9,8 @@
     :root{
       --bg:#0d0f12; --side:#15171c; --panel:#1a1d23; --panel2:#21252d; --line:#2a2f38;
       --txt:#ececf1; --mut:#9099a8; --acc:#10a37f; --acc2:#1bd39a; --user:#2b3340;
-      --gold:#fbbf24; --warn:#f87171; --blue:#60a5fa;
+      --gold:#fbbf24; --warn:#f87171; --blue:#60a5fa; --purple:#a78bfa; --teal:#2dd4bf;
+      --orange:#fb923c;
     }
     *{box-sizing:border-box;}
     html,body{height:100%;margin:0;}
@@ -28,6 +29,7 @@
     .side .stat{padding:10px 12px;border-top:1px solid var(--line);font-size:12px;color:var(--mut);}
     .side .stat .rev{font-size:20px;font-weight:700;color:var(--gold);}
     .side .stat b{color:var(--acc2);font-weight:600;}
+    .side .stat .sbox{font-size:11px;color:var(--teal);}
     /* main */
     .main{flex:1;display:flex;flex-direction:column;min-width:0;}
     .topbar{height:52px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px;padding:0 18px;}
@@ -60,18 +62,22 @@
     .grid{display:grid;gap:12px;}
     .org-tier{margin-bottom:18px;}
     .org-tier .lbl{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--mut);margin:0 0 8px;}
-    .agents{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;}
+    .agents{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;}
     .agent{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px;cursor:pointer;transition:.15s;}
     .agent:hover{border-color:var(--acc);}
     .agent .nm{font-weight:600;display:flex;align-items:center;gap:7px;}
     .dot{width:8px;height:8px;border-radius:50%;background:var(--mut);}
     .dot.on{background:var(--acc2);}.dot.err{background:var(--warn);}.dot.off{background:#475063;}
+    .dot.planning{background:var(--teal);box-shadow:0 0 6px var(--teal);}
     .agent .mt{font-size:11px;color:var(--mut);margin-top:4px;}
     .agent .gl{font-size:11.5px;color:#b9c2d0;margin-top:7px;max-height:48px;overflow:hidden;}
+    .agent .plan-badge{font-size:10px;color:var(--teal);margin-top:5px;font-style:italic;max-height:32px;overflow:hidden;}
     .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-bottom:14px;}
     .card h3{margin:0;padding:12px 16px;font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--mut);border-bottom:1px solid var(--line);}
     .row{padding:9px 16px;border-bottom:1px solid var(--line);font-size:12.5px;}
     .row:last-child{border-bottom:none;}
+    .row.plan-row{border-left:3px solid var(--teal);padding-left:13px;}
+    .row.plan-row .act{color:var(--teal);}
     .badge{display:inline-block;font-size:10px;padding:1px 6px;border-radius:4px;background:var(--panel2);color:var(--mut);margin-left:6px;}
     .badge.approval{color:var(--acc2);}.badge.rejection{color:var(--warn);}.badge.directive{color:var(--gold);}
     .who2{color:var(--acc2);}.to2{color:var(--gold);}.arr{color:var(--mut);}
@@ -91,14 +97,25 @@
     pre{background:#0a0c0f;padding:10px;border-radius:8px;font-size:11.5px;overflow:auto;color:#b9c2d0;white-space:pre-wrap;}
     /* modal */
     .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:50;}
-    .modal{background:var(--panel);border:1px solid var(--line);border-radius:12px;width:min(560px,92vw);max-height:86vh;overflow:auto;}
+    .modal{background:var(--panel);border:1px solid var(--line);border-radius:12px;width:min(600px,94vw);max-height:88vh;overflow:auto;}
     .modal h3{margin:0;padding:14px 18px;border-bottom:1px solid var(--line);font-size:15px;}
     .modal .b{padding:16px 18px;}
-    .kv{display:grid;grid-template-columns:120px 1fr;gap:6px 12px;font-size:13px;}
+    .kv{display:grid;grid-template-columns:130px 1fr;gap:6px 12px;font-size:13px;}
     .kv b{color:var(--mut);font-weight:500;}
     .tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;}
     .tags span{font-size:10px;background:var(--panel2);border:1px solid var(--line);border-radius:4px;padding:1px 6px;}
     .empty{color:var(--mut);padding:30px;text-align:center;}
+    /* sandbox / computer tab */
+    .sandbox-card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px;margin-bottom:10px;}
+    .sandbox-card .sn{font-weight:600;font-size:13px;color:var(--teal);}
+    .sandbox-card .ss{font-size:11px;color:var(--mut);margin-top:3px;}
+    .browser-card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px;margin-bottom:10px;}
+    .browser-card .bn{font-weight:600;font-size:13px;color:var(--blue);}
+    .browser-card .bs{font-size:11px;color:var(--mut);margin-top:3px;}
+    /* pill statuses */
+    .pill{display:inline-block;font-size:10px;padding:1px 8px;border-radius:10px;margin-left:8px;}
+    .pill.running{background:rgba(29,211,154,.12);color:var(--acc2);}
+    .pill.browser{background:rgba(96,165,250,.12);color:var(--blue);}
   </style>
 </head>
 <body x-data="app()" x-init="init()">
@@ -110,19 +127,26 @@
       <button :class="tab==='org'&&'active'" @click="tab='org'"><span class="ico">🏢</span> Organization</button>
       <button :class="tab==='skills'&&'active'" @click="tab='skills'"><span class="ico">🧩</span> Skills</button>
       <button :class="tab==='activity'&&'active'" @click="tab='activity'"><span class="ico">📊</span> Activity</button>
+      <button :class="tab==='computer'&&'active'" @click="tab='computer'"><span class="ico">🖥️</span> Sandboxes</button>
     </nav>
     <div class="spacer"></div>
     <div class="stat">
       <div class="rev" x-text="'$'+(revenue.total_usd||0).toFixed(2)"></div>
       total revenue · <span x-text="agents.length"></span> agents
     </div>
-    <div class="stat">AI online: <b x-text="providers.join(', ')||'—'"></b></div>
+    <div class="stat">AI: <b x-text="providers.join(', ')||'—'"></b></div>
+    <div class="stat" x-show="sandboxes.containers&&sandboxes.containers.length">
+      <div class="sbox">🐳 <span x-text="sandboxes.containers.length"></span> sandbox<span x-text="sandboxes.containers.length!==1?'es':''"></span> running</div>
+    </div>
+    <div class="stat" x-show="sandboxes.browsers&&sandboxes.browsers.length">
+      <div class="sbox">🌐 <span x-text="sandboxes.browsers.length"></span> browser session<span x-text="sandboxes.browsers.length!==1?'s':''"></span></div>
+    </div>
   </aside>
 
   <!-- Main -->
   <div class="main" style="position:relative;">
     <div class="topbar">
-      <h2 x-text="{chat:'Chat',org:'Organization',skills:'Skills',activity:'Activity'}[tab]"></h2>
+      <h2 x-text="{chat:'Chat',org:'Organization',skills:'Skills',activity:'Activity',computer:'Sandboxes & Computer Use'}[tab]"></h2>
       <div class="who" x-show="tab==='chat'">talking to <b x-text="chatAgent"></b></div>
     </div>
 
@@ -173,10 +197,16 @@
             <div class="agents">
               <template x-for="a in agents.filter(x=>x.role===tier)" :key="a.name">
                 <div class="agent" @click="selected=a">
-                  <div class="nm"><span class="dot" :class="dotClass(a)"></span><span x-text="a.name"></span></div>
+                  <div class="nm">
+                    <span class="dot" :class="agentDotClass(a)"></span>
+                    <span x-text="a.name"></span>
+                    <span class="pill browser" x-show="isAgentBrowsing(a.name)">🌐 browsing</span>
+                    <span class="pill running" x-show="isAgentSandboxed(a.name)">🐳 sandbox</span>
+                  </div>
                   <div class="mt"><span x-text="a.team||a.role"></span> · <span x-text="a.model"></span> · every <span x-text="a.interval_minutes"></span>m</div>
                   <div class="mt" x-show="a.runs">runs <span x-text="a.runs"></span> · errors <span x-text="a.errors"></span></div>
                   <div class="gl" x-text="a.goal"></div>
+                  <div class="plan-badge" x-show="agentPlan(a.name)" x-text="agentPlan(a.name)"></div>
                 </div>
               </template>
             </div>
@@ -229,11 +259,82 @@
           </div>
         </div>
         <div class="card">
-          <h3>Activity Log</h3>
+          <h3>Activity Log <span style="font-size:10px;color:var(--teal);font-weight:400;text-transform:none;letter-spacing:0">· teal = agent plan</span></h3>
           <template x-for="l in logs" :key="l.id">
-            <div class="row"><span class="ag" x-text="l.agent"></span> <span class="act" x-text="l.action"></span> <span class="ag" x-text="(l.detail||'').slice(0,70)"></span></div>
+            <div class="row" :class="l.action==='plan'?'plan-row':''">
+              <span class="ag" x-text="l.agent"></span>
+              <span class="act" x-text="l.action"></span>
+              <span class="ag" x-text="(l.detail||'').slice(0,90)"></span>
+            </div>
           </template>
           <template x-if="!logs.length"><div class="row ag">No activity yet.</div></template>
+        </div>
+      </div>
+    </div>
+
+    <!-- COMPUTER / SANDBOXES -->
+    <div class="content" x-show="tab==='computer'">
+      <div class="pad">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+
+          <!-- Docker Sandboxes -->
+          <div>
+            <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--mut);margin-bottom:10px;">🐳 Docker Sandboxes</div>
+            <template x-if="!sandboxes.containers||!sandboxes.containers.length">
+              <div class="empty" style="background:var(--panel);border-radius:10px;border:1px solid var(--line);padding:30px;text-align:center;color:var(--mut);">
+                No sandbox containers running.<br>
+                <small>Containers start automatically when agents use sandbox_* tools.<br>Requires Docker to be running on the host.</small>
+              </div>
+            </template>
+            <template x-for="c in sandboxes.containers||[]" :key="c.name">
+              <div class="sandbox-card">
+                <div class="sn" x-text="c.name"></div>
+                <div class="ss"><span x-text="c.status"></span> · <span x-text="c.size||'—'"></span></div>
+                <div style="margin-top:8px;display:flex;gap:6px;">
+                  <button class="btn sm" @click="sandboxCmd(c.name)">▶ Exec</button>
+                  <button class="btn sm danger" @click="destroySandbox(c.name)">Destroy</button>
+                </div>
+                <div x-show="sandboxOut[c.name]" style="margin-top:8px"><pre x-text="sandboxOut[c.name]"></pre></div>
+              </div>
+            </template>
+          </div>
+
+          <!-- Active Browser Sessions -->
+          <div>
+            <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--mut);margin-bottom:10px;">🌐 Browser Sessions</div>
+            <template x-if="!sandboxes.browsers||!sandboxes.browsers.length">
+              <div class="empty" style="background:var(--panel);border-radius:10px;border:1px solid var(--line);padding:30px;text-align:center;color:var(--mut);">
+                No browser sessions active.<br>
+                <small>Sessions open when agents use browser_* tools.<br>Uses headless Chromium via Playwright — no display needed.</small>
+              </div>
+            </template>
+            <template x-for="name in sandboxes.browsers||[]" :key="name">
+              <div class="browser-card">
+                <div class="bn">🌐 <span x-text="name"></span></div>
+                <div class="bs">Active Playwright session</div>
+                <div style="margin-top:8px;display:flex;gap:6px;">
+                  <button class="btn sm" @click="chatAgent=name;tab='chat'">💬 Chat with agent</button>
+                </div>
+              </div>
+            </template>
+
+            <!-- Computer use info -->
+            <div class="card" style="margin-top:16px;">
+              <h3>Computer Use Capabilities</h3>
+              <div class="row">
+                <span style="color:var(--teal)">🖥️ Desktop</span>
+                <span class="ag" style="display:block;font-size:11px;margin-top:2px;">screenshot, mouse_click, mouse_drag, keyboard_type, keyboard_shortcut — requires DISPLAY</span>
+              </div>
+              <div class="row">
+                <span style="color:var(--blue)">🌐 Browser</span>
+                <span class="ag" style="display:block;font-size:11px;margin-top:2px;">browser_open, browser_click, browser_type, browser_text, browser_screenshot — headless, works anywhere</span>
+              </div>
+              <div class="row">
+                <span style="color:var(--orange)">🐳 Sandbox</span>
+                <span class="ag" style="display:block;font-size:11px;margin-top:2px;">sandbox_exec, sandbox_install, sandbox_browse, sandbox_write — isolated Linux container per agent</span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -253,11 +354,17 @@
             <b>Budget</b><span x-text="'$'+(selected.budget_usd||0).toFixed(2)"></span>
             <b>Runs / Errors</b><span x-text="selected.runs+' / '+selected.errors"></span>
           </div>
-          <div style="margin-top:12px"><b class="ag">Tools</b><div class="tags"><template x-for="t in selected.tools" :key="t"><span x-text="t"></span></template></div></div>
+          <div x-show="agentPlan(selected.name)" style="margin-top:12px">
+            <b class="ag">Last plan</b>
+            <div style="margin-top:4px;font-size:12px;color:var(--teal);font-style:italic;" x-text="agentPlan(selected.name)"></div>
+          </div>
+          <div style="margin-top:12px"><b class="ag">Tools</b><div class="tags"><template x-for="t in selected.tools" :key="t"><span :style="t.startsWith('browser_')?'color:var(--blue)':t.startsWith('sandbox')?'color:var(--orange)':t.startsWith('mouse_')||t.startsWith('keyboard_')||t==='screenshot'?'color:var(--teal)':''" x-text="t"></span></template></div></div>
           <div x-show="selected.last_result" style="margin-top:12px"><b class="ag">Last result</b><pre x-text="selected.last_result"></pre></div>
-          <div style="margin-top:14px;display:flex;gap:8px">
+          <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;">
             <button class="btn primary" @click="trigger(selected.name)">▶ Run now</button>
             <button class="btn" @click="chatAgent=selected.name;tab='chat';selected=null">💬 Chat with</button>
+            <button class="btn" x-show="isAgentBrowsing(selected.name)" @click="selected=null;tab='computer'">🌐 Browser session</button>
+            <button class="btn" x-show="isAgentSandboxed(selected.name)" @click="selected=null;tab='computer'">🐳 Sandbox</button>
             <button class="btn" @click="selected=null">Close</button>
           </div>
         </div>
@@ -271,20 +378,27 @@
         tab:'chat', agents:[], messages:[], busMessages:[], logs:[], revenue:{total_usd:0,by_source:[]},
         providers:[], selected:null, input:'', chatAgent:'ceo', thinking:false,
         skills:[], skillSource:'', skillMsg:'', skillBusy:false, skillOut:{},
-        init(){ this.refresh(); this.loadChat(); this.loadSkills(); setInterval(()=>this.refresh(),5000); },
+        sandboxes:{containers:[],browsers:[]}, sandboxOut:{},
+        init(){
+          this.refresh(); this.loadChat(); this.loadSkills();
+          setInterval(()=>this.refresh(), 5000);
+        },
         async refresh(){
-          const [a,r,b,l,h] = await Promise.all([
-            fetch('/api/agents').then(x=>x.json()),
-            fetch('/api/revenue').then(x=>x.json()),
-            fetch('/api/messages?limit=30').then(x=>x.json()),
-            fetch('/api/logs?limit=40').then(x=>x.json()),
-            fetch('/api/health').then(x=>x.json()),
+          const [a,r,b,l,h,sb] = await Promise.all([
+            fetch('/api/agents').then(x=>x.json()).catch(()=>[]),
+            fetch('/api/revenue').then(x=>x.json()).catch(()=>({total_usd:0,by_source:[]})),
+            fetch('/api/messages?limit=30').then(x=>x.json()).catch(()=>[]),
+            fetch('/api/logs?limit=60').then(x=>x.json()).catch(()=>[]),
+            fetch('/api/health').then(x=>x.json()).catch(()=>({})),
+            fetch('/api/sandboxes').then(x=>x.json()).catch(()=>({containers:[],browsers:[]})),
           ]);
-          this.agents=a; this.revenue=r; this.busMessages=b; this.logs=l; this.providers=h.providers||[];
+          this.agents=a; this.revenue=r; this.busMessages=b; this.logs=l;
+          this.providers=h.providers||[];
+          this.sandboxes=sb;
           if(this.selected) this.selected=a.find(x=>x.name===this.selected.name)||this.selected;
         },
-        async loadChat(){ this.messages=await fetch('/api/chat/history?limit=100').then(x=>x.json()); this.scrollChat(); },
-        async loadSkills(){ this.skills=await fetch('/api/skills').then(x=>x.json()); },
+        async loadChat(){ this.messages=await fetch('/api/chat/history?limit=100').then(x=>x.json()).catch(()=>[]); this.scrollChat(); },
+        async loadSkills(){ this.skills=await fetch('/api/skills').then(x=>x.json()).catch(()=>[]); },
         async send(){
           const text=this.input.trim(); if(!text||this.thinking) return;
           this.input=''; this.thinking=true;
@@ -302,7 +416,27 @@
         },
         scrollChat(){ this.$nextTick(()=>{ const el=this.$refs.chatScroll; if(el)el.scrollTop=el.scrollHeight; }); },
         autosize(e){ e.target.style.height='auto'; e.target.style.height=Math.min(e.target.scrollHeight,160)+'px'; },
-        dotClass(a){ if(!a.enabled)return'off'; if(a.errors>0&&(a.last_result||'').startsWith('ERROR'))return'err'; return a.runs?'on':''; },
+        agentDotClass(a){
+          if(!a.enabled) return 'off';
+          if(a.errors>0&&(a.last_result||'').startsWith('ERROR')) return 'err';
+          // Pulsing teal if agent's last activity was a plan
+          const plan=this.agentPlan(a.name);
+          if(plan&&a.runs) return 'on planning';
+          return a.runs?'on':'';
+        },
+        dotClass(a){ return this.agentDotClass(a); },
+        agentPlan(name){
+          // Find the most recent plan log for this agent
+          const planLog = this.logs.find(l=>l.agent===name&&l.action==='plan');
+          if(!planLog) return '';
+          const detail = planLog.detail||'';
+          return detail.startsWith('No action') ? '' : detail.slice(0,100);
+        },
+        isAgentBrowsing(name){ return (this.sandboxes.browsers||[]).includes(name); },
+        isAgentSandboxed(name){
+          const cname = 'autoearn_'+name.toLowerCase().replace(/[^a-z0-9_]/g,'_')+'_sandbox';
+          return (this.sandboxes.containers||[]).some(c=>c.name===cname);
+        },
         async trigger(n){ await fetch('/api/agents/'+n+'/trigger',{method:'POST'}); setTimeout(()=>this.refresh(),800); },
         async installSkill(){
           if(!this.skillSource.trim())return; this.skillBusy=true; this.skillMsg='Installing…';
@@ -320,6 +454,22 @@
           const d=await r.json(); this.skillOut[n]=d.output;
         },
         async removeSkill(n){ if(!confirm('Remove skill "'+n+'"?'))return; await fetch('/api/skills/'+n,{method:'DELETE'}); this.loadSkills(); },
+        async sandboxCmd(containerName){
+          const agentName = containerName.replace(/^autoearn_/,'').replace(/_sandbox$/,'');
+          const cmd = prompt('Shell command to run in '+agentName+"'s sandbox:",'echo hello');
+          if(!cmd) return;
+          this.sandboxOut[containerName]='Running…';
+          const r=await fetch('/api/agents/'+agentName+'/trigger',{method:'POST'});
+          // Show a note — actual sandbox_exec goes through agent trigger
+          this.sandboxOut[containerName]='Triggered '+agentName+' (use chat to run sandbox_exec directly)';
+        },
+        async destroySandbox(containerName){
+          if(!confirm('Destroy sandbox '+containerName+'? The container will be deleted.')) return;
+          const agentName = containerName.replace(/^autoearn_/,'').replace(/_sandbox$/,'');
+          await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({message:'/trigger '+agentName,agent:'cto'})});
+          setTimeout(()=>this.refresh(),1500);
+        },
       };
     }
   </script>

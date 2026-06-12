@@ -13,8 +13,9 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 
-from core import ai_client, connectors, database as db, message_bus, providers, skills
+from core import ai_client, connectors, database as db, message_bus, providers, sandbox, skills
 from core.chat import Chat
+from core.toolkit.computer import active_browsers
 
 TEMPLATE = Path(__file__).resolve().parent / "templates" / "index.html"
 
@@ -180,5 +181,21 @@ def create_app(orchestrator) -> FastAPI:
                         }
                     )
         return items[:200]
+
+    # ---- Sandboxes + Computer use --------------------------------------
+    @app.get("/api/sandboxes")
+    def sandboxes() -> dict:
+        import json
+        containers_raw = sandbox.sandbox_status()
+        browsers_raw = active_browsers()
+        try:
+            containers = json.loads(containers_raw)
+        except Exception:
+            containers = []
+        try:
+            browsers = json.loads(browsers_raw)
+        except Exception:
+            browsers = []
+        return {"containers": containers, "browsers": browsers}
 
     return app

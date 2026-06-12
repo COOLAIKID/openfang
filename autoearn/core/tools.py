@@ -289,9 +289,60 @@ def _post_reddit(agent: str, subreddit: str = "", title: str = "", body: str = "
 
 
 # --------------------------------------------------------------------------
-# Expanded toolkit (research / finance / content / files / connectors)
+# Expanded toolkit (research / finance / content / files / connectors /
+#                   computer use / browser)
 # Registered here so every tool lives in one registry.
 # --------------------------------------------------------------------------
 from . import toolkit  # noqa: E402
 
 toolkit.register_all(tool)
+
+# --------------------------------------------------------------------------
+# Per-agent Docker sandbox tools
+# --------------------------------------------------------------------------
+from . import sandbox as _sandbox  # noqa: E402
+
+
+@tool("sandbox_exec", "sandbox_exec(command, timeout?) — run a shell command in the agent's isolated Linux container.")
+def _sandbox_exec(agent: str, command: str = "", timeout: int = 30, **_: Any) -> str:
+    return _sandbox.exec_cmd(agent, command, int(timeout))
+
+
+@tool("sandbox_install", "sandbox_install(package, manager?) — install a package in the agent's container. manager: pip (default) | apt.")
+def _sandbox_install(agent: str, package: str = "", manager: str = "pip", **_: Any) -> str:
+    return _sandbox.install_package(agent, package, manager)
+
+
+@tool("sandbox_browse", "sandbox_browse(url) — fetch a URL inside the agent's sandbox container and return readable text.")
+def _sandbox_browse(agent: str, url: str = "", **_: Any) -> str:
+    return _sandbox.browse_url(agent, url)
+
+
+@tool("sandbox_write", "sandbox_write(path, content) — write a file inside the agent's container.")
+def _sandbox_write(agent: str, path: str = "", content: str = "", **_: Any) -> str:
+    return _sandbox.write_file(agent, path, content)
+
+
+@tool("sandbox_read", "sandbox_read(path) — read a file from inside the agent's container.")
+def _sandbox_read(agent: str, path: str = "", **_: Any) -> str:
+    return _sandbox.read_file(agent, path)
+
+
+@tool("sandbox_list", "sandbox_list(path?) — list files in the agent's container (default: /workspace).")
+def _sandbox_list(agent: str, path: str = "/workspace", **_: Any) -> str:
+    return _sandbox.list_files(agent, path)
+
+
+@tool("sandbox_status", "sandbox_status() — list all running AutoEarn sandbox containers.")
+def _sandbox_status(agent: str, **_: Any) -> str:
+    return _sandbox.sandbox_status()
+
+
+@tool("sandbox_destroy", "sandbox_destroy(agent_name?) — stop and remove a sandbox container.")
+def _sandbox_destroy(agent: str, agent_name: str = "", **_: Any) -> str:
+    return _sandbox.destroy_sandbox(agent_name or agent)
+
+
+@tool("sandbox_rebuild", "sandbox_rebuild(agent_name?) — destroy and recreate a fresh sandbox.")
+def _sandbox_rebuild(agent: str, agent_name: str = "", **_: Any) -> str:
+    return _sandbox.rebuild_sandbox(agent_name or agent)
