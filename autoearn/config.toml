@@ -3,13 +3,28 @@
 # and agents will route around what is missing.
 
 [ai]
-# Free AI providers, tried in priority order. Ollama is the offline fallback.
+# AI providers, tried in priority order. Fill in any you have; the cascade routes
+# around the rest. Local providers (Ollama / LM Studio / llama.cpp) are the
+# offline fallback and need no key — just a running server.
 groq_api_key = ""
 gemini_api_key = ""
-huggingface_api_key = ""
+openrouter_api_key = ""
+together_api_key = ""
+deepseek_api_key = ""
 mistral_api_key = ""
+fireworks_api_key = ""
+perplexity_api_key = ""
+cerebras_api_key = ""
+sambanova_api_key = ""
+huggingface_api_key = ""
+cohere_api_key = ""
+openai_api_key = ""
+anthropic_api_key = ""
+# Local fallbacks
 ollama_base_url = "http://localhost:11434"
 ollama_model = "llama3"
+lmstudio_base_url = "http://localhost:1234/v1"
+llamacpp_base_url = "http://localhost:8080/v1"
 
 [server]
 host = "127.0.0.1"
@@ -33,3 +48,43 @@ client_secret = ""
 username = ""
 password = ""
 user_agent = "autoearn/0.1"
+
+# ---- Additional publishing connectors ----
+[ghost]
+admin_api_url = ""   # e.g. https://yourblog.ghost.io
+admin_api_key = ""   # "id:secret" admin key
+
+[devto]
+api_key = ""
+
+[hashnode]
+api_key = ""
+publication_id = ""
+
+# ---- Additional social connectors ----
+[discord]
+webhook_url = ""
+
+[slack]
+webhook_url = ""
+
+[mastodon]
+instance_url = ""    # e.g. https://mastodon.social
+access_token = ""
+
+[twitter]
+bearer_token = ""
+
+# ---- Commerce / payout connectors ----
+[gumroad]
+access_token = ""
+
+[shopify]
+store = ""           # your-store (without .myshopify.com)
+access_token = ""
+
+[stripe]
+secret_key = ""
+
+[lemonsqueezy]
+api_key = ""

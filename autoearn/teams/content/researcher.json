@@ -13,6 +13,11 @@
     "get_messages",
     "web_search",
     "fetch_url",
+    "wikipedia",
+    "read_rss",
+    "hacker_news",
+    "google_trends",
+    "reddit_top",
     "save_output"
   ],
   "memory": {}

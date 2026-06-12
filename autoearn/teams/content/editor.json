@@ -11,6 +11,12 @@
   "tools": [
     "send_message",
     "get_messages",
+    "analyze_text",
+    "keyword_density",
+    "make_slug",
+    "meta_description",
+    "read_file",
+    "list_files",
     "save_output"
   ],
   "memory": {}

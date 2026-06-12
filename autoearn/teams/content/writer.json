@@ -15,6 +15,10 @@
     "fetch_url",
     "list_skills",
     "use_skill",
+    "analyze_text",
+    "keyword_density",
+    "make_slug",
+    "meta_description",
     "save_output"
   ],
   "memory": {}

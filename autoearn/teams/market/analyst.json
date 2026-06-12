@@ -14,6 +14,9 @@
     "web_search",
     "fetch_url",
     "fetch_prices",
+    "crypto_signal",
+    "fx_rate",
+    "hacker_news",
     "save_output"
   ],
   "memory": {}

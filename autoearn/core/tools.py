@@ -286,3 +286,12 @@ def _post_reddit(agent: str, subreddit: str = "", title: str = "", body: str = "
     submission = reddit.subreddit(subreddit).submit(title=title, selftext=body)
     db.log_activity(agent, "post_reddit", submission.url)
     return f"Posted to r/{subreddit}: {submission.url}"
+
+
+# --------------------------------------------------------------------------
+# Expanded toolkit (research / finance / content / files / connectors)
+# Registered here so every tool lives in one registry.
+# --------------------------------------------------------------------------
+from . import toolkit  # noqa: E402
+
+toolkit.register_all(tool)

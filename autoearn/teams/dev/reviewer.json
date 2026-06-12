@@ -11,6 +11,8 @@
   "tools": [
     "send_message",
     "get_messages",
+    "read_file",
+    "list_files",
     "save_output"
   ],
   "memory": {}

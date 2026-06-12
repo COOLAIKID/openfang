@@ -15,6 +15,10 @@ ROOT = Path(__file__).resolve().parent
 # Shared tool bundles.
 COMMS = ["send_message", "get_messages"]
 INFO = ["web_search", "fetch_url"]
+RESEARCH = ["wikipedia", "read_rss", "hacker_news", "google_trends", "reddit_top"]
+WRITING = ["analyze_text", "keyword_density", "make_slug", "meta_description"]
+FILES = ["read_file", "list_files"]
+MARKET = ["fetch_prices", "crypto_signal", "fx_rate"]
 SELF = ["update_goal", "update_system_prompt", "update_model", "update_interval", "update_tools", "update_memory"]
 ORG = ["spawn_agent", "kill_agent", "get_all_agents", "set_budget"]
 SKILLS = ["list_skills", "use_skill"]
@@ -57,9 +61,9 @@ COUNCIL = [
         "cfo", "council",
         "Manage budgets and revenue allocation so spending stays efficient.",
         "You are the CFO. You watch revenue and per-agent spend, set budgets, and tell "
-        "the council where money is being made or wasted. Reallocate budget toward what "
-        "earns.",
-        COMMS + ["get_revenue_summary", "get_all_agents", "set_budget", "log_revenue"],
+        "the council where money is being made or wasted. Reconcile real payouts from "
+        "commerce connectors (gumroad/shopify/stripe/lemonsqueezy) against the ledger.",
+        COMMS + ["get_revenue_summary", "get_all_agents", "set_budget", "log_revenue", "check_sales", "connectors"],
         interval=240,
     ),
     agent(
@@ -99,18 +103,18 @@ TEAMS = [
           "Research topics and produce briefs for the writer.",
           "You are the Content Researcher. You find profitable, low-competition topics "
           "and send a brief to 'writer' via message.",
-          COMMS + INFO + ["save_output"], team="content", interval=90),
+          COMMS + INFO + RESEARCH + ["save_output"], team="content", interval=90),
     agent("writer", "team",
           "Turn research briefs into compelling, SEO-friendly articles.",
           "You are the Content Writer. You read briefs from the researcher, write the "
           "article, save it to output/articles, and send it to 'editor'. Use installed "
           "skills when they help you write better.",
-          COMMS + INFO + SKILLS + ["save_output"], team="content", interval=90),
+          COMMS + INFO + SKILLS + WRITING + ["save_output"], team="content", interval=90),
     agent("editor", "team",
           "Polish articles and submit finished work to QC.",
           "You are the Content Editor. You refine the writer's draft and send the final "
           "'output' message to 'content_qc' for review.",
-          COMMS + ["save_output"], team="content", interval=90),
+          COMMS + WRITING + FILES + ["save_output"], team="content", interval=90),
 
     # Dev team
     agent("designer", "team",
@@ -122,24 +126,24 @@ TEAMS = [
           "Implement the designs as working code saved to output/code.",
           "You are the Coder. You implement the designer's spec, save code to output/code, "
           "and send it to 'reviewer'. Use installed skills when they help you build.",
-          COMMS + INFO + SKILLS + ["save_output"], team="dev", interval=120),
+          COMMS + INFO + SKILLS + FILES + ["save_output"], team="dev", interval=120),
     agent("reviewer", "team",
           "Review code for quality and submit to QC.",
           "You are the Code Reviewer. You check the coder's work and send the final "
           "'output' message to 'dev_qc'.",
-          COMMS + ["save_output"], team="dev", interval=120),
+          COMMS + FILES + ["save_output"], team="dev", interval=120),
 
     # Market team
     agent("analyst", "team",
           "Analyze markets and crypto prices for actionable signals.",
           "You are the Market Analyst. You pull prices and news, analyze trends, and send "
           "findings to 'trader'.",
-          COMMS + INFO + ["fetch_prices", "save_output"], team="market", interval=30),
+          COMMS + INFO + MARKET + ["hacker_news", "save_output"], team="market", interval=30),
     agent("trader", "team",
           "Turn analysis into concrete buy/sell/hold signals.",
           "You are the Trader. You convert the analyst's findings into a clear signal with "
           "reasoning and send it to 'publisher'. Log any realized revenue.",
-          COMMS + ["fetch_prices", "save_output", "log_revenue"], team="market", interval=30),
+          COMMS + MARKET + ["save_output", "log_revenue"], team="market", interval=30),
     agent("publisher", "team",
           "Publish approved signals to the audience.",
           "You are the Market Publisher. You take the trader's signal and send the final "
@@ -172,8 +176,10 @@ QC = [
           "You are Content QC. You receive 'output' from the content team. Score it for "
           "quality, accuracy and brand safety. If good, publish it (publish_wordpress / "
           "publish_medium) and reply 'approval'. If not, reply 'rejection' to 'editor' with "
-          "specific fixes. After 3 rejections on the same subject, escalate to 'ceo'.",
-          COMMS + ["publish_wordpress", "publish_medium", "save_output"], team="content", interval=60),
+          "specific fixes. After 3 rejections on the same subject, escalate to 'ceo'. "
+          "Use the 'publish' tool with any configured connector (wordpress/ghost/devto/"
+          "hashnode/medium); check /connectors to see what's available.",
+          COMMS + WRITING + ["publish", "connectors", "publish_wordpress", "publish_medium", "save_output"], team="content", interval=60),
     agent("dev_qc", "qc",
           "Approve only working, valuable code; ship what passes.",
           "You are Dev QC. You receive 'output' from the dev team. If the code is solid and "
@@ -185,8 +191,9 @@ QC = [
           "You are Market QC. You receive signal 'output' from the market team. If the "
           "reasoning is sound and not reckless, post it (post_telegram / post_reddit) and "
           "reply 'approval'. Otherwise reply 'rejection' to 'publisher'. Escalate to 'cmo' "
-          "after 3 rejections.",
-          COMMS + ["post_telegram", "post_reddit", "save_output"], team="market", interval=30),
+          "after 3 rejections. Use 'post_social' with any configured channel "
+          "(telegram/discord/slack/mastodon/reddit/twitter); see /connectors.",
+          COMMS + ["post_social", "connectors", "post_telegram", "post_reddit", "save_output"], team="market", interval=30),
     agent("outreach_qc", "qc",
           "Approve only strong, honest proposals.",
           "You are Outreach QC. You receive proposal 'output' from the outreach team. If "

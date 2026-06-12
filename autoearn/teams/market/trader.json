@@ -12,6 +12,8 @@
     "send_message",
     "get_messages",
     "fetch_prices",
+    "crypto_signal",
+    "fx_rate",
     "save_output",
     "log_revenue"
   ],

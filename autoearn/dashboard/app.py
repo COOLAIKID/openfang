@@ -13,7 +13,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 
-from core import ai_client, database as db, message_bus, skills
+from core import ai_client, connectors, database as db, message_bus, providers, skills
 from core.chat import Chat
 
 TEMPLATE = Path(__file__).resolve().parent / "templates" / "index.html"
@@ -53,6 +53,14 @@ def create_app(orchestrator) -> FastAPI:
     @app.get("/api/health")
     def health() -> dict:
         return {"status": "ok", "providers": ai_client.available_providers()}
+
+    @app.get("/api/providers")
+    def providers_list() -> list[dict]:
+        return [p.describe() for p in providers.instantiate_all()]
+
+    @app.get("/api/connectors")
+    def connectors_list() -> list[dict]:
+        return connectors.configured()
 
     @app.get("/api/agents")
     def agents() -> list[dict]:
