@@ -65,8 +65,11 @@ Reset the starting org at any time with `python seed_agents.py --force`.
 - `output/` — everything agents produce (articles, code, proposals, signals)
 - `dashboard/` — FastAPI app + Alpine.js single-page dashboard
 
-## Safety rails
-Guard rails protect the host, not the agents' autonomy: a max agent count
-(`MAX_AGENTS=60`) and a minimum run interval (`5 min`). Publishing tools that
-lack credentials become no-ops that return a readable error, so agents simply
-route around whatever you haven't configured.
+## Autonomy
+There are **no policy guard rails**. The organization runs indefinitely and
+grows, shrinks, or stops **only by council decision** — nothing in the code caps
+the agent count or halts the org automatically. The single exception is a
+1-minute technical floor on run interval, because the scheduler needs a positive
+interval to function. Publishing tools that lack credentials become no-ops that
+return a readable error, so agents simply route around whatever you haven't
+configured.

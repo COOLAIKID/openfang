@@ -17,9 +17,10 @@ from typing import Any
 from . import database as db
 from .tools import tool
 
-# Guard rails (generous — these exist to protect the host, not to constrain ideas).
-MAX_AGENTS = 60
-MIN_INTERVAL_MINUTES = 5
+# No policy guard rails: the council alone decides whether the organization
+# grows, shrinks, or stops. The only floor is a 1-minute technical minimum on
+# run interval, because the scheduler requires a positive interval to function.
+MIN_INTERVAL_MINUTES = 1
 
 # Wired up by agent_manager at startup to avoid an import cycle.
 _manager = None
@@ -119,8 +120,6 @@ def _spawn_agent(
     **_: Any,
 ) -> str:
     mgr = _require_manager()
-    if len(mgr.all()) >= MAX_AGENTS:
-        return f"ERROR: agent cap reached ({MAX_AGENTS}). Kill an agent before spawning more."
     if not name:
         return "ERROR: 'name' is required."
     if mgr.get(name) is not None:
