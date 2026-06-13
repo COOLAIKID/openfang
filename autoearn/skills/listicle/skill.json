@@ -1,0 +1,7 @@
+{
+  "name": "listicle",
+  "version": "1.0.0",
+  "description": "Write a fully fleshed-out 'Top 10' style listicle article that is SEO-optimized, highly shareable, and genuinely useful to readers.",
+  "input_description": "Topic or keyword for the listicle, target audience, and optional number of items (defaults to 10).",
+  "output_description": "Complete listicle in Markdown with a keyword-rich title, compelling intro, numbered items each with a subheading and 2-4 paragraph explanation, and a conclusion with CTA."
+}

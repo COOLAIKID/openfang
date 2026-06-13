@@ -1,0 +1,7 @@
+{
+  "name": "reddit-post",
+  "version": "1.0.0",
+  "description": "Write an authentic, value-first Reddit post designed to drive organic traffic and engagement without triggering spam filters or community backlash.",
+  "input_description": "Topic or product to promote, target subreddit(s), key insight or value to share, and any soft mention or link you want to include.",
+  "output_description": "A Reddit post with a curiosity-driven title, genuine value-packed body (300-600 words), natural soft mention of product/brand if applicable, and 3 suggested subreddits with posting tips."
+}

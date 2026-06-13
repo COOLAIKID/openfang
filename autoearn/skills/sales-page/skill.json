@@ -1,0 +1,7 @@
+{
+  "name": "sales-page",
+  "version": "1.0.0",
+  "description": "Write a long-form, conversion-focused sales page with a power headline, problem agitation, benefit-driven copy, testimonial placeholders, objection-handling FAQ, and a strong CTA.",
+  "input_description": "Product or service name, target customer, core problem solved, top 3-5 benefits, price point, and any known objections.",
+  "output_description": "Complete long-form sales page in Markdown with all major sections: hero, problem, solution, benefits, social proof, FAQ, and CTA block."
+}

@@ -1,0 +1,7 @@
+{
+  "name": "product-description",
+  "version": "1.0.0",
+  "description": "Write a persuasive ecommerce product description that highlights features as benefits, speaks to buyer emotions, and drives add-to-cart action.",
+  "input_description": "Product name, category, key features, target buyer, price point, and any unique selling points or brand voice notes.",
+  "output_description": "Product description with a hook headline, benefit-led paragraph copy, a features/specs bullet list, a 'Who it's for' section, and a closing CTA phrase."
+}

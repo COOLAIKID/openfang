@@ -1,0 +1,7 @@
+{
+  "name": "case-study",
+  "version": "1.0.0",
+  "description": "Produce a compelling customer case study following the Problem / Solution / Results framework, suitable for B2B sales collateral or website publication.",
+  "input_description": "Customer name or role, industry, the challenge they faced, the solution applied, and measurable results achieved.",
+  "output_description": "Structured case study with executive summary, background, challenge, solution details, quantified results, and a pull-quote testimonial — formatted in Markdown."
+}

@@ -1,0 +1,7 @@
+{
+  "name": "content-brief",
+  "version": "1.0.0",
+  "description": "Generate a detailed content brief that gives a writer everything they need to produce a well-researched, SEO-optimized, on-brand article without revision cycles.",
+  "input_description": "Target keyword or topic, content goal (rank, lead gen, thought leadership), target audience, word count target, and any competitor URLs or notes.",
+  "output_description": "Comprehensive content brief including goal, audience persona, keyword targets, suggested title options, outline with H2/H3 structure, angle/hook, research prompts, tone guidance, internal link suggestions, and success metrics."
+}

@@ -346,3 +346,607 @@ def _sandbox_destroy(agent: str, agent_name: str = "", **_: Any) -> str:
 @tool("sandbox_rebuild", "sandbox_rebuild(agent_name?) — destroy and recreate a fresh sandbox.")
 def _sandbox_rebuild(agent: str, agent_name: str = "", **_: Any) -> str:
     return _sandbox.rebuild_sandbox(agent_name or agent)
+
+
+# --------------------------------------------------------------------------
+# Semantic memory tools (per-agent SQLite FTS5 memory store)
+# --------------------------------------------------------------------------
+from . import memory as _memory  # noqa: E402
+
+
+@tool("memory_save", "memory_save(key, content, tags?) — save a memory entry with optional tags.")
+def _memory_save(agent: str, key: str = "", content: str = "", tags: list | None = None, **_: Any) -> str:
+    mid = _memory.save(agent, key, content, tags)
+    return f"Saved memory #{mid} under key '{key}'"
+
+
+@tool("memory_recall", "memory_recall(query, limit?) — full-text search your memory for relevant entries.")
+def _memory_recall(agent: str, query: str = "", limit: int = 10, **_: Any) -> str:
+    results = _memory.recall(agent, query, int(limit))
+    return json.dumps(results)
+
+
+@tool("memory_get", "memory_get(key) — retrieve a specific memory entry by exact key.")
+def _memory_get(agent: str, key: str = "", **_: Any) -> str:
+    result = _memory.get(agent, key)
+    return json.dumps(result) if result else f"No memory found for key '{key}'"
+
+
+@tool("memory_delete", "memory_delete(key) — delete a specific memory entry.")
+def _memory_delete(agent: str, key: str = "", **_: Any) -> str:
+    ok = _memory.delete(agent, key)
+    return f"Deleted memory '{key}'" if ok else f"No memory found for key '{key}'"
+
+
+@tool("memory_list", "memory_list(tag?) — list all memory keys, optionally filtered by tag.")
+def _memory_list(agent: str, tag: str = "", **_: Any) -> str:
+    keys = _memory.list_keys(agent, tag or None)
+    return json.dumps(keys)
+
+
+@tool("memory_summarize", "memory_summarize() — summary of this agent's memory (count, tags, recent entries).")
+def _memory_summarize(agent: str, **_: Any) -> str:
+    return json.dumps(_memory.summarize(agent))
+
+
+@tool("memory_inject_context", "memory_inject_context(query, max_chars?) — retrieve memory as formatted context string for prompts.")
+def _memory_inject(agent: str, query: str = "", max_chars: int = 2000, **_: Any) -> str:
+    return _memory.inject_context(agent, query, int(max_chars))
+
+
+# --------------------------------------------------------------------------
+# Monitoring tools
+# --------------------------------------------------------------------------
+from . import monitoring as _monitoring  # noqa: E402
+
+
+@tool("org_health", "org_health() — health score and status for every agent in the organization.")
+def _org_health(agent: str, **_: Any) -> str:
+    return _monitoring.health_summary()
+
+
+@tool("stale_agents", "stale_agents(threshold_minutes?) — list agents that haven't run recently.")
+def _stale_agents(agent: str, threshold_minutes: float = 120.0, **_: Any) -> str:
+    stale = _monitoring.stale_agents(float(threshold_minutes))
+    return json.dumps([{"name": a.name, "last_run_minutes_ago": a.last_run_minutes_ago} for a in stale])
+
+
+@tool("erroring_agents", "erroring_agents(threshold_rate?) — list agents with high error rates.")
+def _erroring_agents(agent: str, threshold_rate: float = 0.5, **_: Any) -> str:
+    erring = _monitoring.erroring_agents(float(threshold_rate))
+    return json.dumps([{"name": a.name, "error_rate": a.error_rate, "runs": a.runs} for a in erring])
+
+
+@tool("log_metric", "log_metric(metric, value) — log a numeric metric for this agent.")
+def _log_metric(agent: str, metric: str = "", value: float = 0.0, **_: Any) -> str:
+    _monitoring.log_metric(agent, metric, float(value))
+    return f"Logged {metric}={value} for {agent}"
+
+
+@tool("get_metrics", "get_metrics(metric, last_n?) — retrieve recent metric values for this agent.")
+def _get_metrics(agent: str, metric: str = "", last_n: int = 100, **_: Any) -> str:
+    return json.dumps(_monitoring.get_metrics(agent, metric, int(last_n)))
+
+
+# --------------------------------------------------------------------------
+# Notification tools
+# --------------------------------------------------------------------------
+from . import notifications as _notifications  # noqa: E402
+
+
+@tool("notify", "notify(message, level?, title?) — send a notification via all configured channels.")
+def _notify(agent: str, message: str = "", level: str = "info", title: str = "", **_: Any) -> str:
+    results = _notifications.notify(agent=agent, message=message, level=level, title=title or f"AutoEarn: {agent}")
+    sent = [ch for ch, ok in results.items() if ok]
+    return f"Notification sent via: {', '.join(sent) or 'none'}"
+
+
+@tool("notify_error_alert", "notify_error_alert(error, context?) — send error alert to all notification channels.")
+def _notify_error(agent: str, error: str = "", context: str = "", **_: Any) -> str:
+    results = _notifications.notify_error(agent, error, context)
+    sent = [ch for ch, ok in results.items() if ok]
+    return f"Error alert sent via: {', '.join(sent) or 'none'}"
+
+
+@tool("notify_revenue_milestone", "notify_revenue_milestone(amount, source) — send revenue notification to all channels.")
+def _notify_revenue(agent: str, amount: float = 0.0, source: str = "", **_: Any) -> str:
+    results = _notifications.notify_revenue(agent, float(amount), source)
+    sent = [ch for ch, ok in results.items() if ok]
+    return f"Revenue notification sent via: {', '.join(sent) or 'none'}"
+
+
+# --------------------------------------------------------------------------
+# Workflow tools
+# --------------------------------------------------------------------------
+from . import workflows as _workflows  # noqa: E402
+
+
+@tool("list_workflows", "list_workflows() — list all saved multi-agent workflows.")
+def _list_workflows(agent: str, **_: Any) -> str:
+    return json.dumps(_workflows.list_workflows())
+
+
+@tool("run_workflow", "run_workflow(name, context?) — execute a named workflow with optional context variables.")
+def _run_workflow(agent: str, name: str = "", context: dict | None = None, **_: Any) -> str:
+    wf = _workflows.load_workflow(name)
+    if wf is None:
+        return f"ERROR: workflow '{name}' not found."
+    results = _workflows.run_workflow(wf, context or {})
+    return json.dumps({"workflow": name, "steps_run": len(results), "results": results})
+
+
+# --------------------------------------------------------------------------
+# Treasury tools
+# --------------------------------------------------------------------------
+from . import treasury as _treasury  # noqa: E402
+
+
+@tool("financial_report", "financial_report(days?) — full P&L report for the past N days.")
+def _financial_report(agent: str, days: int = 7, **_: Any) -> str:
+    return _treasury.financial_report(int(days))
+
+
+@tool("budget_health", "budget_health() — budget utilization and remaining budget for each agent.")
+def _budget_health(agent: str, **_: Any) -> str:
+    return json.dumps(_treasury.budget_health())
+
+
+@tool("roi_summary", "roi_summary(days?) — ROI per agent: spend vs revenue over the past N days.")
+def _roi_summary(agent: str, days: int = 30, **_: Any) -> str:
+    return json.dumps(_treasury.roi_summary(int(days)))
+
+
+@tool("record_spend", "record_spend(amount, category, description?) — record a spending event for budget tracking.")
+def _record_spend(agent: str, amount: float = 0.0, category: str = "general", description: str = "", **_: Any) -> str:
+    _treasury.record_spend(agent, float(amount), category, description)
+    return f"Recorded spend of ${float(amount):.2f} ({category})"
+
+
+@tool("suggest_budget_reallocation", "suggest_budget_reallocation() — AI-powered budget reallocation recommendations based on ROI.")
+def _realloc(agent: str, **_: Any) -> str:
+    return json.dumps(_treasury.suggest_reallocation())
+
+
+# --------------------------------------------------------------------------
+# A/B testing tools
+# --------------------------------------------------------------------------
+from . import ab_testing as _ab  # noqa: E402
+
+
+@tool("ab_create", "ab_create(name, variants, hypothesis?, min_sample_size?) — create a new A/B experiment.")
+def _ab_create(agent: str, name: str = "", variants: list | None = None, hypothesis: str = "", min_sample_size: int = 100, **_: Any) -> str:
+    return _ab.create_experiment_tool(name, variants, hypothesis, int(min_sample_size))
+
+
+@tool("ab_assign", "ab_assign(experiment_name, participant_id) — assign a participant to a variant.")
+def _ab_assign(agent: str, experiment_name: str = "", participant_id: str = "", **_: Any) -> str:
+    return _ab.assign_tool(experiment_name, participant_id)
+
+
+@tool("ab_convert", "ab_convert(experiment_name, participant_id, revenue?) — record a conversion event.")
+def _ab_convert(agent: str, experiment_name: str = "", participant_id: str = "", revenue: float = 0.0, **_: Any) -> str:
+    _ab.record_conversion(experiment_name, participant_id, float(revenue))
+    return f"Conversion recorded for '{participant_id}' in experiment '{experiment_name}'"
+
+
+@tool("ab_analyze", "ab_analyze(experiment_name) — statistical analysis of an A/B experiment.")
+def _ab_analyze(agent: str, experiment_name: str = "", **_: Any) -> str:
+    return _ab.analyze_tool(experiment_name)
+
+
+@tool("ab_conclude", "ab_conclude(experiment_name) — auto-select winner if statistically significant.")
+def _ab_conclude(agent: str, experiment_name: str = "", **_: Any) -> str:
+    return _ab.conclude_experiment_tool(experiment_name)
+
+
+@tool("ab_list", "ab_list() — list all A/B experiments and their current status.")
+def _ab_list(agent: str, **_: Any) -> str:
+    return _ab.experiment_summary()
+
+
+# --------------------------------------------------------------------------
+# Lead tracker / CRM tools
+# --------------------------------------------------------------------------
+from . import lead_tracker as _leads  # noqa: E402
+
+
+@tool("track_lead", "track_lead(name, source?, contact_email?, company?, estimated_value?, notes?) — add a new lead to the CRM.")
+def _track_lead(agent: str, name: str = "", source: str = "", contact_email: str = "", company: str = "", estimated_value: float = 0.0, notes: str = "", **_: Any) -> str:
+    return _leads.track_lead(name, source, contact_email, company, float(estimated_value), notes, agent)
+
+
+@tool("move_lead", "move_lead(lead_id, stage, note?) — advance a lead to a new pipeline stage.")
+def _move_lead(agent: str, lead_id: int = 0, stage: str = "", note: str = "", **_: Any) -> str:
+    return _leads.move_lead_stage(int(lead_id), stage, agent, note)
+
+
+@tool("pipeline_report", "pipeline_report() — full CRM pipeline value and conversion summary.")
+def _pipeline_report(agent: str, **_: Any) -> str:
+    return _leads.get_pipeline_report()
+
+
+@tool("followup_leads", "followup_leads() — list leads overdue for follow-up (inactive for 3+ days).")
+def _followup_leads(agent: str, **_: Any) -> str:
+    return _leads.get_followup_leads()
+
+
+@tool("search_leads", "search_leads(query) — search leads by name, company, or niche.")
+def _search_leads(agent: str, query: str = "", **_: Any) -> str:
+    return _leads.search_leads(query)
+
+
+@tool("add_lead_note", "add_lead_note(lead_id, note) — add an activity note to a lead.")
+def _add_note(agent: str, lead_id: int = 0, note: str = "", **_: Any) -> str:
+    return _leads.add_note(int(lead_id), agent, note)
+
+
+# --------------------------------------------------------------------------
+# Event bus tools
+# --------------------------------------------------------------------------
+from . import event_bus as _events  # noqa: E402
+
+
+@tool("publish_event", "publish_event(event_type, data?, priority?) — publish an event to the org event bus.")
+def _publish_event(agent: str, event_type: str = "", data: dict | None = None, priority: int = 5, **_: Any) -> str:
+    return _events.publish_event(event_type, data, source=agent, priority=int(priority))
+
+
+@tool("consume_events", "consume_events(limit?) — consume and return pending events for this agent.")
+def _consume_events(agent: str, limit: int = 20, **_: Any) -> str:
+    return _events.consume_events(agent, int(limit))
+
+
+@tool("event_stats", "event_stats() — event bus statistics: total events, pending deliveries, by type.")
+def _event_stats(agent: str, **_: Any) -> str:
+    return _events.get_event_stats()
+
+
+# --------------------------------------------------------------------------
+# Rate limiter / cache management tools
+# --------------------------------------------------------------------------
+from . import rate_limiter as _rl  # noqa: E402
+from . import caching as _cache  # noqa: E402
+
+
+@tool("limiter_status", "limiter_status() — status of all API rate limiters (available tokens, window counts).")
+def _limiter_status(agent: str, **_: Any) -> str:
+    return _rl.get_limiter_status()
+
+
+@tool("cache_stats", "cache_stats() — statistics for all HTTP response caches (hit rates, sizes).")
+def _cache_stats(agent: str, **_: Any) -> str:
+    return _cache.cache_stats_all()
+
+
+@tool("clear_cache", "clear_cache(name) — clear a named cache (web, prices, search, api).")
+def _clear_cache(agent: str, name: str = "web", **_: Any) -> str:
+    return _cache.clear_cache(name)
+
+
+# --------------------------------------------------------------------------
+# Content pipeline tools
+# --------------------------------------------------------------------------
+from . import content_pipeline as _cp  # noqa: E402
+
+
+@tool("create_content_piece", "create_content_piece(title, content_type?, niche?, target_keyword?, estimated_words?) — add a new piece to the content pipeline.")
+def _create_piece(agent: str, title: str = "", content_type: str = "blog_post", niche: str = "", target_keyword: str = "", estimated_words: int = 1500, **_: Any) -> str:
+    return _cp.create_content_piece(title, content_type, niche, target_keyword, int(estimated_words))
+
+
+@tool("advance_content", "advance_content(piece_id, stage, note?) — move a content piece to the next pipeline stage.")
+def _advance_piece(agent: str, piece_id: int = 0, stage: str = "", note: str = "", **_: Any) -> str:
+    return _cp.advance_content(int(piece_id), stage, note, agent)
+
+
+@tool("my_content_queue", "my_content_queue() — list content pieces currently assigned to this agent.")
+def _my_queue(agent: str, **_: Any) -> str:
+    return _cp.my_content_queue(agent)
+
+
+@tool("content_pipeline_report", "content_pipeline_report() — full content pipeline statistics and stage breakdown.")
+def _pipeline_report(agent: str, **_: Any) -> str:
+    return _cp.content_pipeline_report()
+
+
+@tool("stale_content_report", "stale_content_report() — find content pieces stuck in a stage for 24+ hours.")
+def _stale_content(agent: str, **_: Any) -> str:
+    return _cp.stale_content_report()
+
+
+# --------------------------------------------------------------------------
+# Competitor monitor tools
+# --------------------------------------------------------------------------
+from . import competitor_monitor as _cm  # noqa: E402
+
+
+@tool("add_competitor", "add_competitor(name, domain, niche?, keywords?) — start tracking a competitor website.")
+def _add_competitor(agent: str, name: str = "", domain: str = "", niche: str = "", keywords: list | None = None, **_: Any) -> str:
+    return _cm.add_competitor_tool(name, domain, niche, keywords)
+
+
+@tool("check_competitor", "check_competitor(competitor_id, url?) — check a competitor page for changes since last visit.")
+def _check_competitor(agent: str, competitor_id: int = 0, url: str = "", **_: Any) -> str:
+    return _cm.check_competitor_tool(int(competitor_id), url)
+
+
+@tool("competitor_report", "competitor_report() — summary of all tracked competitors and recent changes.")
+def _competitor_report(agent: str, **_: Any) -> str:
+    return _cm.competitor_report_tool()
+
+
+@tool("recent_competitor_changes", "recent_competitor_changes(days?) — recent competitor change events (price, content, rank).")
+def _recent_comp_changes(agent: str, days: int = 7, **_: Any) -> str:
+    return _cm.recent_competitor_changes_tool(int(days))
+
+
+# --------------------------------------------------------------------------
+# Social scheduler tools
+# --------------------------------------------------------------------------
+from . import social_scheduler as _ss  # noqa: E402
+
+
+@tool("schedule_social_post", "schedule_social_post(platform, content, hashtags?, scheduled_for?) — schedule a social media post.")
+def _schedule_post(agent: str, platform: str = "", content: str = "", hashtags: list | None = None, scheduled_for: float | None = None, **_: Any) -> str:
+    return _ss.schedule_post_tool(platform, content, hashtags, scheduled_for, agent)
+
+
+@tool("due_social_posts", "due_social_posts(platform?) — list social posts due for publishing now.")
+def _due_posts(agent: str, platform: str = "", **_: Any) -> str:
+    return _ss.get_due_posts_tool(platform)
+
+
+@tool("social_queue", "social_queue(platform?) — view the upcoming social post queue.")
+def _social_queue(agent: str, platform: str = "", **_: Any) -> str:
+    return _ss.publishing_queue_tool(platform)
+
+
+@tool("mark_post_published", "mark_post_published(post_id, url?) — mark a scheduled post as published.")
+def _mark_published(agent: str, post_id: int = 0, url: str = "", **_: Any) -> str:
+    return _ss.mark_published(int(post_id), url)
+
+
+@tool("social_schedule_stats", "social_schedule_stats(days?) — publishing statistics across platforms.")
+def _sched_stats(agent: str, days: int = 7, **_: Any) -> str:
+    return _ss.schedule_stats_tool(int(days))
+
+
+# --------------------------------------------------------------------------
+# Keyword tracker tools
+# --------------------------------------------------------------------------
+from . import keyword_tracker as _kt  # noqa: E402
+
+
+@tool("track_keyword", "track_keyword(keyword, target_url?, niche?, search_volume?, keyword_difficulty?) — add keyword to rank tracker.")
+def _track_kw(agent: str, keyword: str = "", target_url: str = "", niche: str = "", search_volume: int = 0, keyword_difficulty: int = 0, **_: Any) -> str:
+    return _kt.add_keyword_tool(keyword, target_url, niche, int(search_volume), int(keyword_difficulty))
+
+
+@tool("update_keyword_rank", "update_keyword_rank(keyword, rank, url?) — record a new rank for a keyword.")
+def _update_rank(agent: str, keyword: str = "", rank: int = 0, url: str = "", **_: Any) -> str:
+    return _kt.update_rank_tool(keyword, int(rank), url)
+
+
+@tool("keyword_opportunities", "keyword_opportunities(niche?, min_volume?) — keywords on page 2-3 ripe for optimization.")
+def _kw_opps(agent: str, niche: str = "", min_volume: int = 100, **_: Any) -> str:
+    return _kt.keyword_opportunities_tool(niche, int(min_volume))
+
+
+@tool("keyword_report", "keyword_report() — full keyword tracking report: tiers, top rankings, alerts.")
+def _kw_report(agent: str, **_: Any) -> str:
+    return _kt.keyword_report_tool()
+
+
+@tool("rank_alerts", "rank_alerts() — unacknowledged keyword ranking drop alerts.")
+def _rank_alerts(agent: str, **_: Any) -> str:
+    return _kt.rank_alerts_tool()
+
+
+# --------------------------------------------------------------------------
+# Prompt manager tools
+# --------------------------------------------------------------------------
+from . import prompt_manager as _pm  # noqa: E402
+
+
+@tool("save_prompt", "save_prompt(name, template, description?, category?) — save a reusable prompt template with {{variable}} placeholders.")
+def _save_prompt(agent: str, name: str = "", template: str = "", description: str = "", category: str = "general", **_: Any) -> str:
+    return _pm.save_prompt_tool(name, template, description, category)
+
+
+@tool("render_prompt", "render_prompt(name, variables?) — render a prompt template by substituting {{variable}} placeholders.")
+def _render_prompt(agent: str, name: str = "", variables: dict | None = None, **_: Any) -> str:
+    return _pm.render_prompt_tool(name, variables)
+
+
+@tool("list_prompts", "list_prompts(category?) — list available prompt templates.")
+def _list_prompts(agent: str, category: str = "", **_: Any) -> str:
+    return _pm.list_prompts_tool(category)
+
+
+@tool("prompt_stats", "prompt_stats() — usage statistics for prompt templates.")
+def _prompt_stats(agent: str, **_: Any) -> str:
+    return _pm.prompt_stats_tool()
+
+
+# --------------------------------------------------------------------------
+# Analytics tracker tools
+# --------------------------------------------------------------------------
+from . import analytics_tracker as _at  # noqa: E402
+
+
+@tool("track_event", "track_event(event_type, source?, channel?, campaign?, content_id?, value?) — record an analytics event (pageview, click, conversion, signup, etc.).")
+def _track_event(agent: str, event_type: str = "", source: str = "", channel: str = "", campaign: str = "", content_id: str = "", value: float = 0.0, **_: Any) -> str:
+    return _at.track_event_tool(event_type, source, channel, campaign, content_id, value)
+
+
+@tool("kpi_summary", "kpi_summary(days?) — revenue, conversion, and traffic KPI dashboard for the last N days.")
+def _kpi_summary(agent: str, days: int = 30, **_: Any) -> str:
+    return _at.kpi_summary_tool(days)
+
+
+@tool("channel_breakdown", "channel_breakdown(days?) — revenue and conversions broken down by marketing channel.")
+def _channel_breakdown(agent: str, days: int = 30, **_: Any) -> str:
+    return _at.channel_breakdown_tool(days)
+
+
+@tool("top_content", "top_content(days?, limit?) — top content pieces by revenue generated.")
+def _top_content(agent: str, days: int = 30, limit: int = 20, **_: Any) -> str:
+    return _at.top_content_tool(days, limit)
+
+
+@tool("daily_series", "daily_series(days?) — daily revenue series for charting trends.")
+def _daily_series(agent: str, days: int = 30, **_: Any) -> str:
+    return _at.daily_series_tool(days)
+
+
+@tool("revenue_anomalies", "revenue_anomalies(days?) — detect days with unusual revenue spikes or drops using z-score analysis.")
+def _revenue_anomalies(agent: str, days: int = 30, **_: Any) -> str:
+    return _at.anomaly_tool(days)
+
+
+@tool("create_goal", "create_goal(name, description?, target?, unit?) — create a trackable revenue or traffic goal.")
+def _create_goal(agent: str, name: str = "", description: str = "", target: float = 0.0, unit: str = "count", **_: Any) -> str:
+    return _at.create_goal_tool(name, description, target, unit)
+
+
+@tool("list_goals", "list_goals() — list all goals with current progress.")
+def _list_goals(agent: str, **_: Any) -> str:
+    return _at.list_goals_tool()
+
+
+@tool("funnel_report", "funnel_report(funnel_name) — get step-by-step drop-off analysis for a conversion funnel.")
+def _funnel_report(agent: str, funnel_name: str = "", **_: Any) -> str:
+    return _at.funnel_report_tool(funnel_name)
+
+
+# --------------------------------------------------------------------------
+# Newsletter tools
+# --------------------------------------------------------------------------
+from . import newsletter as _nl  # noqa: E402
+
+
+@tool("nl_subscribe", "nl_subscribe(email, first_name?, last_name?, list_name?, source?, tags?) — subscribe an email address to a newsletter list.")
+def _nl_subscribe(agent: str, email: str = "", first_name: str = "", last_name: str = "", list_name: str = "main", source: str = "", tags: str = "", **_: Any) -> str:
+    return _nl.subscribe_tool(email, first_name, last_name, list_name, source, tags)
+
+
+@tool("nl_unsubscribe", "nl_unsubscribe(email) — unsubscribe an email address.")
+def _nl_unsubscribe(agent: str, email: str = "", **_: Any) -> str:
+    return _nl.unsubscribe_tool(email)
+
+
+@tool("nl_subscriber_count", "nl_subscriber_count(list_name?, status?) — count subscribers, optionally filtered by list and status.")
+def _nl_subscriber_count(agent: str, list_name: str = "", status: str = "confirmed", **_: Any) -> str:
+    return _nl.subscriber_count_tool(list_name, status)
+
+
+@tool("nl_create_campaign", "nl_create_campaign(name, subject, body?, list_name?) — create a draft email campaign.")
+def _nl_create_campaign(agent: str, name: str = "", subject: str = "", body: str = "", list_name: str = "main", **_: Any) -> str:
+    return _nl.create_campaign_tool(name, subject, body, list_name)
+
+
+@tool("nl_summary", "nl_summary() — newsletter health summary: subscriber counts, open rates, revenue.")
+def _nl_summary(agent: str, **_: Any) -> str:
+    return _nl.newsletter_summary_tool()
+
+
+@tool("nl_due_campaigns", "nl_due_campaigns() — list email campaigns scheduled for sending now or in the past.")
+def _nl_due_campaigns(agent: str, **_: Any) -> str:
+    return _nl.due_campaigns_tool()
+
+
+@tool("nl_growth_trend", "nl_growth_trend(days?) — daily subscriber growth and unsubscribe trend.")
+def _nl_growth_trend(agent: str, days: int = 30, **_: Any) -> str:
+    return _nl.growth_trend_tool(days)
+
+
+@tool("nl_create_sequence", "nl_create_sequence(name, description?, trigger?, list_name?) — create an email automation sequence.")
+def _nl_create_sequence(agent: str, name: str = "", description: str = "", trigger: str = "signup", list_name: str = "main", **_: Any) -> str:
+    return _nl.create_sequence_tool(name, description, trigger, list_name)
+
+
+# --------------------------------------------------------------------------
+# Affiliate tracker tools
+# --------------------------------------------------------------------------
+from . import affiliate_tracker as _aff  # noqa: E402
+
+
+@tool("aff_add_program", "aff_add_program(name, network?, commission_rate?, commission_type?, preset?) — add an affiliate program. Use preset='amazon', 'clickbank', 'shareasale' etc. for defaults.")
+def _aff_add_program(agent: str, name: str = "", network: str = "", commission_rate: float = 0.0, commission_type: str = "percentage", preset: str = "", **_: Any) -> str:
+    return _aff.add_program_tool(name, network, commission_rate, commission_type, preset)
+
+
+@tool("aff_create_link", "aff_create_link(program_name, destination_url, content_id?, campaign?) — create a tracked affiliate link with automatic commission tracking.")
+def _aff_create_link(agent: str, program_name: str = "", destination_url: str = "", content_id: str = "", campaign: str = "", **_: Any) -> str:
+    return _aff.create_link_tool(program_name, destination_url, content_id, campaign)
+
+
+@tool("aff_record_conversion", "aff_record_conversion(link_id, sale_amount, order_id?) — record an affiliate sale conversion.")
+def _aff_record_conversion(agent: str, link_id: int = 0, sale_amount: float = 0.0, order_id: str = "", **_: Any) -> str:
+    return _aff.record_conversion_tool(link_id, sale_amount, order_id)
+
+
+@tool("aff_summary", "aff_summary() — overall affiliate program performance summary.")
+def _aff_summary(agent: str, **_: Any) -> str:
+    return _aff.affiliate_summary_tool()
+
+
+@tool("aff_program_performance", "aff_program_performance(days?) — revenue and commissions per affiliate program.")
+def _aff_program_performance(agent: str, days: int = 30, **_: Any) -> str:
+    return _aff.program_performance_tool(days)
+
+
+@tool("aff_top_links", "aff_top_links(days?, limit?) — top performing affiliate links by commission earned.")
+def _aff_top_links(agent: str, days: int = 30, limit: int = 10, **_: Any) -> str:
+    return _aff.top_links_tool(days, limit)
+
+
+@tool("aff_list_programs", "aff_list_programs() — list all active affiliate programs.")
+def _aff_list_programs(agent: str, **_: Any) -> str:
+    return _aff.list_programs_tool()
+
+
+# --------------------------------------------------------------------------
+# SEO optimizer tools
+# --------------------------------------------------------------------------
+from . import seo_optimizer as _seo_opt  # noqa: E402
+
+
+@tool("seo_analyze", "seo_analyze(content, title?, meta_description?, target_keyword?, url?) — analyze content for on-page SEO score, issues, and suggestions.")
+def _seo_analyze(agent: str, content: str = "", title: str = "", meta_description: str = "", target_keyword: str = "", url: str = "", **_: Any) -> str:
+    return _seo_opt.analyze_content_tool(content, title, meta_description, target_keyword, url)
+
+
+@tool("seo_generate_title", "seo_generate_title(topic, keyword?, style?) — generate 5 SEO-optimized title tag variations. Styles: standard, listicle, question, ecommerce.")
+def _seo_generate_title(agent: str, topic: str = "", keyword: str = "", style: str = "standard", **_: Any) -> str:
+    return _seo_opt.generate_title_tool(topic, keyword, style)
+
+
+@tool("seo_generate_meta", "seo_generate_meta(topic, keyword?, cta?) — generate 5 meta description variations (120-160 chars).")
+def _seo_generate_meta(agent: str, topic: str = "", keyword: str = "", cta: str = "Learn more", **_: Any) -> str:
+    return _seo_opt.generate_meta_tool(topic, keyword, cta)
+
+
+@tool("seo_faq_schema", "seo_faq_schema(faqs_json) — generate FAQ Page JSON-LD schema from a JSON array of {question, answer} objects.")
+def _seo_faq_schema(agent: str, faqs_json: str = "", **_: Any) -> str:
+    return _seo_opt.generate_faq_schema_tool(faqs_json)
+
+
+@tool("seo_site_overview", "seo_site_overview() — SEO health summary across all tracked pages: average score, grade breakdown, orphan pages.")
+def _seo_site_overview(agent: str, **_: Any) -> str:
+    return _seo_opt.site_overview_tool()
+
+
+@tool("seo_pages_needing_work", "seo_pages_needing_work(score_threshold?, limit?) — list pages below the SEO score threshold, ordered by lowest score.")
+def _seo_pages_needing_work(agent: str, score_threshold: float = 70.0, limit: int = 10, **_: Any) -> str:
+    return _seo_opt.pages_needing_work_tool(score_threshold, limit)
+
+
+@tool("seo_add_redirect", "seo_add_redirect(from_url, to_url, reason?) — add a 301 URL redirect rule.")
+def _seo_add_redirect(agent: str, from_url: str = "", to_url: str = "", reason: str = "", **_: Any) -> str:
+    return _seo_opt.add_redirect_tool(from_url, to_url, reason)
+
+
+@tool("seo_orphan_pages", "seo_orphan_pages() — find pages with no internal links pointing to them.")
+def _seo_orphan_pages(agent: str, **_: Any) -> str:
+    return _seo_opt.orphan_pages_tool()

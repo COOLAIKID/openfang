@@ -11,6 +11,21 @@ from .base import Connector, ConnectorResult, all_connectors, get, register
 from . import blogging  # noqa: E402,F401
 from . import commerce  # noqa: E402,F401
 from . import social  # noqa: E402,F401
+from . import ads  # noqa: E402,F401
+from . import analytics  # noqa: E402,F401
+from . import email_marketing  # noqa: E402,F401
+from . import elearning  # noqa: E402,F401
+from . import freelance  # noqa: E402,F401
+
+try:
+    from . import storage  # noqa: E402,F401
+except Exception:  # noqa: BLE001
+    pass
+
+try:
+    from . import hosting  # noqa: E402,F401
+except Exception:  # noqa: BLE001
+    pass
 
 __all__ = [
     "Connector",

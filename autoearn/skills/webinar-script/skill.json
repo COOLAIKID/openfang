@@ -1,0 +1,7 @@
+{
+  "name": "webinar-script",
+  "version": "1.0.0",
+  "description": "Create a complete 60-minute webinar script with slide-by-slide outline, presenter notes, engagement prompts, and a strong pitch close.",
+  "input_description": "Webinar topic, presenter name and credentials, target audience, core teaching content (3-5 main points), offer being pitched, and price point.",
+  "output_description": "Full webinar script in Markdown with intro/credibility section, 3-5 content modules with slide titles and speaker notes, Q&A bridge, pitch sequence, objection handling, and closing."
+}

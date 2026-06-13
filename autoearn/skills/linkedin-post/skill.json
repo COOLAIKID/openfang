@@ -1,0 +1,7 @@
+{
+  "name": "linkedin-post",
+  "version": "1.0.0",
+  "description": "Write a viral-worthy LinkedIn post from a topic, insight, or personal story that drives engagement, builds authority, and grows followers.",
+  "input_description": "Topic, insight, personal story, or opinion to share, plus optional poster's industry and the action you want readers to take.",
+  "output_description": "A single LinkedIn post (1300 characters or fewer) with a pattern-interrupt opening line, structured body with line breaks for scannability, value delivery, and an engagement-driving close."
+}
