@@ -267,6 +267,7 @@ def schedule_post(
              "", "", post.created_at, 0.0),
         )
         post.id = cur.lastrowid
+        post.status = "scheduled"
     conn.close()
     return post
 

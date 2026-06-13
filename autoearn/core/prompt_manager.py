@@ -208,8 +208,8 @@ def _ensure() -> None:
     global _schema_ready
     if not _schema_ready:
         _init_schema()
+        _schema_ready = True  # set before _seed_builtins to prevent re-entrant call
         _seed_builtins()
-        _schema_ready = True
 
 
 def _seed_builtins() -> None:

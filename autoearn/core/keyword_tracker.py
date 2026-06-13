@@ -148,7 +148,7 @@ def _init_schema() -> None:
                 keyword         TEXT    NOT NULL,
                 old_rank        INTEGER NOT NULL,
                 new_rank        INTEGER NOT NULL,
-                drop            INTEGER NOT NULL,
+                position_drop   INTEGER NOT NULL,
                 ts              REAL    NOT NULL,
                 acknowledged    INTEGER NOT NULL DEFAULT 0
             )
@@ -254,7 +254,7 @@ def update_rank(keyword_id: int, rank: int, url: str = "", serp_features: list[s
         if old_rank > 0 and rank > old_rank + 5:
             conn.execute(
                 """INSERT INTO rank_alerts
-                   (keyword_id, keyword, old_rank, new_rank, drop, ts, acknowledged)
+                   (keyword_id, keyword, old_rank, new_rank, position_drop, ts, acknowledged)
                    VALUES (?,?,?,?,?,?,0)""",
                 (keyword_id, kw.keyword, old_rank, rank, rank - old_rank, time.time()),
             )
