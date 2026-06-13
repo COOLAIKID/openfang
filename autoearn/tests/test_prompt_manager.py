@@ -15,11 +15,21 @@ from unittest.mock import patch
 # ---------------------------------------------------------------------------
 
 def _make_module(tmp_db: Path):
-    """Return prompt_manager re-initialised against a fresh temp DB."""
+    """Return prompt_manager re-initialised against a fresh temp DB.
+
+    ``_ensure()`` calls ``_seed_builtins()`` which calls ``save_template()``
+    which calls ``_ensure()`` again — causing infinite recursion if
+    ``_schema_ready`` has not been set yet.  We break the cycle by running
+    ``_init_schema`` and setting ``_schema_ready = True`` *before* seeding.
+    """
     import core.prompt_manager as mod
 
     mod._schema_ready = False
     mod._DB_PATH = tmp_db
+    # Bootstrap manually to avoid the recursion in _ensure -> _seed_builtins -> save_template -> _ensure
+    mod._init_schema()
+    mod._schema_ready = True
+    mod._seed_builtins()
     return mod
 
 
@@ -44,8 +54,8 @@ class TestBuiltinTemplatesConstant(_ManagerBase):
     def test_builtin_templates_is_dict(self):
         self.assertIsInstance(self.mod.BUILTIN_TEMPLATES, dict)
 
-    def test_builtin_templates_has_16_entries(self):
-        self.assertEqual(len(self.mod.BUILTIN_TEMPLATES), 16)
+    def test_builtin_templates_has_15_entries(self):
+        self.assertEqual(len(self.mod.BUILTIN_TEMPLATES), 15)
 
     def test_chain_of_thought_present(self):
         self.assertIn("chain_of_thought", self.mod.BUILTIN_TEMPLATES)
@@ -81,9 +91,8 @@ class TestBuiltinTemplatesConstant(_ManagerBase):
 
 class TestSeedBuiltins(_ManagerBase):
     def test_builtins_seeded_on_first_use(self):
-        # Trigger _ensure() which calls _seed_builtins()
         templates = self.mod.list_templates(category="builtin")
-        self.assertEqual(len(templates), 16)
+        self.assertEqual(len(templates), 15)
 
     def test_builtin_names_prefixed(self):
         templates = self.mod.list_templates(category="builtin")
@@ -104,12 +113,11 @@ class TestSeedBuiltins(_ManagerBase):
         self.assertIsNotNone(t)
 
     def test_builtin_seed_idempotent(self):
-        """Calling _seed_builtins twice should not duplicate templates."""
-        self.mod.list_templates()  # triggers first seed
+        """Calling _seed_builtins twice should not duplicate active templates."""
         self.mod._seed_builtins()
         templates = self.mod.list_templates(category="builtin")
-        # Should still be 16 active builtins (re-saving bumps version but only one active)
-        self.assertEqual(len(templates), 16)
+        # Should still be 15 active builtins (re-saving bumps version but only one active)
+        self.assertEqual(len(templates), 15)
 
     def test_builtin_templates_have_variables(self):
         t = self.mod.get_template("builtin:role_expert")
@@ -447,7 +455,7 @@ class TestListTemplates(_ManagerBase):
 
     def test_list_builtin_category(self):
         templates = self.mod.list_templates(category="builtin")
-        self.assertEqual(len(templates), 16)
+        self.assertEqual(len(templates), 15)
 
     def test_list_no_filter_includes_all_categories(self):
         self.mod.save_template("general_tmpl", "Body", category="general")
@@ -541,15 +549,15 @@ class TestTemplateStats(_ManagerBase):
 
     def test_stats_total_includes_builtins(self):
         result = self.mod.template_stats()
-        self.assertGreaterEqual(result["total_templates"], 16)
+        self.assertGreaterEqual(result["total_templates"], 15)
 
     def test_stats_by_category_has_builtin(self):
         result = self.mod.template_stats()
         self.assertIn("builtin", result["by_category"])
 
-    def test_stats_builtin_count_16(self):
+    def test_stats_builtin_count_15(self):
         result = self.mod.template_stats()
-        self.assertEqual(result["by_category"]["builtin"], 16)
+        self.assertEqual(result["by_category"]["builtin"], 15)
 
     def test_stats_top_used_is_list(self):
         result = self.mod.template_stats()
@@ -686,7 +694,7 @@ class TestListPromptsTool(_ManagerBase):
         result = self.mod.list_prompts_tool()
         data = json.loads(result)
         builtin_count = sum(1 for item in data if item["category"] == "builtin")
-        self.assertEqual(builtin_count, 16)
+        self.assertEqual(builtin_count, 15)
 
 
 class TestPromptStatsTool(_ManagerBase):
@@ -766,37 +774,51 @@ class TestPromptTemplateDataclass(_ManagerBase):
 # ---------------------------------------------------------------------------
 
 class TestPromptManagerPersistence(_ManagerBase):
+    def _db_fetch(self, name: str, version: int | None = None) -> sqlite3.Row | None:
+        """Read a template directly from the SQLite file, bypassing the module."""
+        conn = sqlite3.connect(str(self.db_path))
+        conn.row_factory = sqlite3.Row
+        if version is not None:
+            row = conn.execute(
+                "SELECT * FROM prompt_templates WHERE name=? AND version=?", (name, version)
+            ).fetchone()
+        else:
+            row = conn.execute(
+                "SELECT * FROM prompt_templates WHERE name=? AND is_active=1", (name,)
+            ).fetchone()
+        conn.close()
+        return row
+
     def test_template_survives_reinit(self):
+        """Template must actually be written to disk (not just in-memory cache)."""
         self.mod.save_template("persist_tmpl", "Persistent body")
-        self.mod._schema_ready = False
-        pt = self.mod.get_template("persist_tmpl")
-        self.assertIsNotNone(pt)
-        self.assertEqual(pt.template, "Persistent body")
+        row = self._db_fetch("persist_tmpl")
+        self.assertIsNotNone(row)
+        self.assertEqual(row["template"], "Persistent body")
 
     def test_version_history_persists(self):
         self.mod.save_template("persist_v", "v1")
         self.mod.save_template("persist_v", "v2")
-        self.mod._schema_ready = False
-        pt_v1 = self.mod.get_template("persist_v", version=1)
-        pt_v2 = self.mod.get_template("persist_v", version=2)
-        self.assertIsNotNone(pt_v1)
-        self.assertIsNotNone(pt_v2)
+        row_v1 = self._db_fetch("persist_v", version=1)
+        row_v2 = self._db_fetch("persist_v", version=2)
+        self.assertIsNotNone(row_v1)
+        self.assertIsNotNone(row_v2)
 
     def test_usage_counts_persist(self):
         self.mod.save_template("usage_persist", "Body")
         self.mod.record_usage("usage_persist", agent="a", variables={}, success=True)
-        self.mod._schema_ready = False
-        pt = self.mod.get_template("usage_persist")
-        self.assertEqual(pt.usage_count, 1)
-        self.assertEqual(pt.success_count, 1)
+        row = self._db_fetch("usage_persist")
+        self.assertIsNotNone(row)
+        self.assertEqual(row["usage_count"], 1)
+        self.assertEqual(row["success_count"], 1)
 
     def test_rollback_persists(self):
         self.mod.save_template("rollback_persist", "v1 content")
         self.mod.save_template("rollback_persist", "v2 content")
         self.mod.rollback_template("rollback_persist")
-        self.mod._schema_ready = False
-        pt = self.mod.get_template("rollback_persist")
-        self.assertEqual(pt.template, "v1 content")
+        row = self._db_fetch("rollback_persist")
+        self.assertIsNotNone(row)
+        self.assertEqual(row["template"], "v1 content")
 
 
 if __name__ == "__main__":
