@@ -1184,3 +1184,4 @@ from . import email_marketing as _em  # noqa: E402, F401
 from . import course_builder as _cb  # noqa: E402, F401
 from . import webhook_manager as _wh  # noqa: E402, F401
 from . import traffic_analyzer as _ta  # noqa: E402, F401
+from . import lead_scoring as _ls  # noqa: E402, F401
