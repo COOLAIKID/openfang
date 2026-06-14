@@ -81,9 +81,27 @@ CREATE TABLE IF NOT EXISTS tasks (
     ended_at   REAL
 );
 
+CREATE TABLE IF NOT EXISTS machines (
+    name       TEXT PRIMARY KEY,     -- e.g. "Aaron's MacBook"
+    info       TEXT,                 -- json: os, docker?, agents running, etc.
+    last_seen  REAL NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS runner_jobs (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    machine    TEXT NOT NULL,
+    kind       TEXT NOT NULL,        -- shell | agent
+    payload    TEXT,                 -- command, or agent name
+    status     TEXT NOT NULL DEFAULT 'pending',  -- pending|running|done|error
+    result     TEXT,
+    created_at REAL NOT NULL,
+    updated_at REAL
+);
+
 CREATE INDEX IF NOT EXISTS idx_messages_to ON messages(to_agent, status);
 CREATE INDEX IF NOT EXISTS idx_activity_agent ON activity(agent);
 CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status);
+CREATE INDEX IF NOT EXISTS idx_jobs_machine ON runner_jobs(machine, status);
 """
 
 
@@ -198,6 +216,95 @@ def cleanup_stale_tasks(max_age_seconds: float = 1800) -> None:
             "UPDATE tasks SET status='done', ended_at=? WHERE status='running' AND started_at < ?",
             (_now(), cutoff),
         )
+
+
+# --------------------------------------------------------------------------
+# Machines + remote jobs (your computer connecting to the cloud dashboard)
+# --------------------------------------------------------------------------
+def register_machine(name: str, info: str = "") -> None:
+    """Upsert a connected machine and bump its heartbeat."""
+    init()
+    with _connect() as conn:
+        if info:
+            conn.execute(
+                "INSERT INTO machines (name, info, last_seen) VALUES (?,?,?) "
+                "ON CONFLICT(name) DO UPDATE SET info=excluded.info, last_seen=excluded.last_seen",
+                (name, info, _now()),
+            )
+        else:
+            conn.execute(
+                "INSERT INTO machines (name, info, last_seen) VALUES (?, '', ?) "
+                "ON CONFLICT(name) DO UPDATE SET last_seen=excluded.last_seen",
+                (name, _now()),
+            )
+
+
+def recent_machines(online_within: float = 45.0) -> list[dict[str, Any]]:
+    init()
+    with _connect() as conn:
+        rows = conn.execute("SELECT * FROM machines ORDER BY last_seen DESC").fetchall()
+    out = []
+    now = _now()
+    for r in rows:
+        d = dict(r)
+        d["online"] = (now - d["last_seen"]) <= online_within
+        out.append(d)
+    return out
+
+
+def enqueue_job(machine: str, kind: str, payload: str = "") -> int:
+    init()
+    with _connect() as conn:
+        cur = conn.execute(
+            "INSERT INTO runner_jobs (machine, kind, payload, status, created_at) "
+            "VALUES (?,?,?, 'pending', ?)",
+            (machine, kind, payload, _now()),
+        )
+        return int(cur.lastrowid)
+
+
+def claim_next_job(machine: str) -> dict[str, Any] | None:
+    """Atomically hand the oldest pending job for a machine to its runner."""
+    init()
+    with _connect() as conn:
+        conn.execute("BEGIN IMMEDIATE")
+        row = conn.execute(
+            "SELECT * FROM runner_jobs WHERE machine=? AND status='pending' ORDER BY id ASC LIMIT 1",
+            (machine,),
+        ).fetchone()
+        if row is None:
+            conn.execute("COMMIT")
+            return None
+        conn.execute(
+            "UPDATE runner_jobs SET status='running', updated_at=? WHERE id=?",
+            (_now(), row["id"]),
+        )
+        conn.execute("COMMIT")
+        return dict(row)
+
+
+def complete_job(job_id: int, status: str, result: str = "") -> None:
+    init()
+    with _connect() as conn:
+        conn.execute(
+            "UPDATE runner_jobs SET status=?, result=?, updated_at=? WHERE id=?",
+            (status, result, _now(), job_id),
+        )
+
+
+def recent_jobs(limit: int = 30, machine: str | None = None) -> list[dict[str, Any]]:
+    init()
+    with _connect() as conn:
+        if machine:
+            rows = conn.execute(
+                "SELECT * FROM runner_jobs WHERE machine=? ORDER BY id DESC LIMIT ?",
+                (machine, limit),
+            ).fetchall()
+        else:
+            rows = conn.execute(
+                "SELECT * FROM runner_jobs ORDER BY id DESC LIMIT ?", (limit,)
+            ).fetchall()
+    return [dict(r) for r in rows]
 
 
 # --------------------------------------------------------------------------
