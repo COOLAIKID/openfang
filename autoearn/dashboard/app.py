@@ -7,6 +7,7 @@ is a single static template kept in ``templates/index.html``.
 from __future__ import annotations
 
 import json
+import socket
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
@@ -181,6 +182,24 @@ def create_app(orchestrator) -> FastAPI:
                         }
                     )
         return items[:200]
+
+    # ---- Network info (for phone connection) ---------------------------
+    @app.get("/api/network")
+    def network_info() -> dict:
+        """Return the server's LAN IP so mobile clients can build a URL."""
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+                s.connect(("8.8.8.8", 80))
+                local_ip = s.getsockname()[0]
+        except Exception:
+            local_ip = "127.0.0.1"
+        port = orchestrator.config.get("server", {}).get("port", 4200) if hasattr(orchestrator, "config") else 4200
+        return {
+            "local_ip": local_ip,
+            "port": port,
+            "url": f"http://{local_ip}:{port}",
+            "websocket_url": f"ws://{local_ip}:{port}/ws",
+        }
 
     # ---- Sandboxes + Computer use --------------------------------------
     @app.get("/api/sandboxes")

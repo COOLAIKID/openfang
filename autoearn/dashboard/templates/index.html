@@ -6,130 +6,750 @@
   <title>AutoEarn</title>
   <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
   <style>
-    :root{
-      --bg:#0d0f12; --side:#15171c; --panel:#1a1d23; --panel2:#21252d; --line:#2a2f38;
-      --txt:#ececf1; --mut:#9099a8; --acc:#10a37f; --acc2:#1bd39a; --user:#2b3340;
-      --gold:#fbbf24; --warn:#f87171; --blue:#60a5fa; --purple:#a78bfa; --teal:#2dd4bf;
-      --orange:#fb923c;
+    /* ── Design tokens ── */
+    :root {
+      --bg:     #0d0f12;
+      --side:   #15171c;
+      --panel:  #1a1d23;
+      --panel2: #21252d;
+      --line:   #2a2f38;
+      --txt:    #ececf1;
+      --mut:    #9099a8;
+      --acc:    #10a37f;
+      --acc2:   #1bd39a;
+      --user:   #2b3340;
+      --gold:   #fbbf24;
+      --warn:   #f87171;
+      --blue:   #60a5fa;
+      --purple: #a78bfa;
+      --teal:   #2dd4bf;
+      --orange: #fb923c;
+      --sidebar-w: 240px;
+      --bottom-nav-h: 60px;
     }
-    *{box-sizing:border-box;}
-    html,body{height:100%;margin:0;}
-    body{background:var(--bg);color:var(--txt);font:14px/1.55 -apple-system,Segoe UI,Roboto,Helvetica,sans-serif;display:flex;}
-    a{color:var(--acc2);}
-    /* sidebar */
-    .side{width:240px;min-width:240px;background:var(--side);border-right:1px solid var(--line);display:flex;flex-direction:column;padding:14px 10px;}
-    .brand{font-size:18px;font-weight:700;padding:6px 10px 14px;letter-spacing:.3px;}
-    .brand span{color:var(--acc2);}
-    .nav{display:flex;flex-direction:column;gap:2px;}
-    .nav button{display:flex;align-items:center;gap:10px;background:none;border:none;color:var(--mut);text-align:left;padding:10px 12px;border-radius:8px;cursor:pointer;font-size:14px;width:100%;}
-    .nav button:hover{background:var(--panel);color:var(--txt);}
-    .nav button.active{background:var(--panel2);color:var(--txt);}
-    .nav .ico{width:18px;text-align:center;}
-    .side .spacer{flex:1;}
-    .side .stat{padding:10px 12px;border-top:1px solid var(--line);font-size:12px;color:var(--mut);}
-    .side .stat .rev{font-size:20px;font-weight:700;color:var(--gold);}
-    .side .stat b{color:var(--acc2);font-weight:600;}
-    .side .stat .sbox{font-size:11px;color:var(--teal);}
-    /* main */
-    .main{flex:1;display:flex;flex-direction:column;min-width:0;}
-    .topbar{height:52px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px;padding:0 18px;}
-    .topbar h2{font-size:15px;margin:0;font-weight:600;}
-    .topbar .who{margin-left:auto;font-size:12px;color:var(--mut);}
-    .content{flex:1;overflow:auto;}
-    /* chat */
-    .chat-wrap{max-width:780px;margin:0 auto;padding:24px 18px 120px;}
-    .bubble{display:flex;gap:12px;margin:18px 0;}
-    .bubble .av{width:28px;height:28px;border-radius:6px;flex:none;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;}
-    .bubble.user .av{background:var(--user);color:var(--txt);}
-    .bubble.assistant .av{background:var(--acc);color:#fff;}
-    .bubble .body{flex:1;min-width:0;}
-    .bubble .name{font-size:12px;color:var(--mut);margin-bottom:3px;}
-    .bubble .text{white-space:pre-wrap;word-wrap:break-word;}
-    .bubble.error .text{color:var(--warn);}
-    .bubble.command .text{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:13px;}
-    .text code{background:#0a0c0f;padding:1px 5px;border-radius:4px;font-size:12px;}
-    .text b{color:#fff;}
-    .composer{position:absolute;bottom:0;left:240px;right:0;background:linear-gradient(transparent,var(--bg) 28%);padding:14px 18px 18px;}
-    .composer .inner{max-width:780px;margin:0 auto;display:flex;gap:8px;align-items:flex-end;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:8px 8px 8px 14px;}
-    .composer select{background:var(--panel2);color:var(--txt);border:1px solid var(--line);border-radius:8px;padding:8px;font-size:12px;max-width:120px;}
-    .composer textarea{flex:1;background:none;border:none;color:var(--txt);resize:none;font:14px/1.5 inherit;max-height:160px;outline:none;padding:8px 0;}
-    .composer button{background:var(--acc);color:#fff;border:none;border-radius:9px;width:38px;height:38px;font-size:16px;cursor:pointer;flex:none;}
-    .composer button:disabled{opacity:.4;cursor:default;}
-    .hint{max-width:780px;margin:6px auto 0;font-size:11px;color:var(--mut);text-align:center;}
-    .hint code{background:var(--panel2);padding:1px 5px;border-radius:4px;cursor:pointer;}
-    /* generic cards */
-    .pad{padding:20px;}
-    .grid{display:grid;gap:12px;}
-    .org-tier{margin-bottom:18px;}
-    .org-tier .lbl{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--mut);margin:0 0 8px;}
-    .agents{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;}
-    .agent{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px;cursor:pointer;transition:.15s;}
-    .agent:hover{border-color:var(--acc);}
-    .agent .nm{font-weight:600;display:flex;align-items:center;gap:7px;}
-    .dot{width:8px;height:8px;border-radius:50%;background:var(--mut);}
-    .dot.on{background:var(--acc2);}.dot.err{background:var(--warn);}.dot.off{background:#475063;}
-    .dot.planning{background:var(--teal);box-shadow:0 0 6px var(--teal);}
-    .agent .mt{font-size:11px;color:var(--mut);margin-top:4px;}
-    .agent .gl{font-size:11.5px;color:#b9c2d0;margin-top:7px;max-height:48px;overflow:hidden;}
-    .agent .plan-badge{font-size:10px;color:var(--teal);margin-top:5px;font-style:italic;max-height:32px;overflow:hidden;}
-    .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-bottom:14px;}
-    .card h3{margin:0;padding:12px 16px;font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--mut);border-bottom:1px solid var(--line);}
-    .row{padding:9px 16px;border-bottom:1px solid var(--line);font-size:12.5px;}
-    .row:last-child{border-bottom:none;}
-    .row.plan-row{border-left:3px solid var(--teal);padding-left:13px;}
-    .row.plan-row .act{color:var(--teal);}
-    .badge{display:inline-block;font-size:10px;padding:1px 6px;border-radius:4px;background:var(--panel2);color:var(--mut);margin-left:6px;}
-    .badge.approval{color:var(--acc2);}.badge.rejection{color:var(--warn);}.badge.directive{color:var(--gold);}
-    .who2{color:var(--acc2);}.to2{color:var(--gold);}.arr{color:var(--mut);}
-    .act{color:var(--blue);}.ag{color:var(--mut);}
-    /* skills */
-    .skill{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px;margin-bottom:10px;}
-    .skill .sn{font-weight:600;font-size:15px;}
-    .skill .sd{color:var(--mut);font-size:13px;margin:4px 0 8px;}
-    .skill .files{font-size:11px;color:var(--mut);}
-    .installbar{display:flex;gap:8px;margin-bottom:16px;}
-    .installbar input{flex:1;background:var(--panel);border:1px solid var(--line);border-radius:9px;color:var(--txt);padding:10px 12px;font-size:13px;outline:none;}
-    button.btn{background:var(--panel2);color:var(--txt);border:1px solid var(--line);border-radius:8px;padding:8px 14px;font-size:13px;cursor:pointer;}
-    button.btn:hover{border-color:var(--acc);color:var(--acc2);}
-    button.btn.primary{background:var(--acc);color:#fff;border-color:var(--acc);}
-    button.btn.danger:hover{border-color:var(--warn);color:var(--warn);}
-    button.btn.sm{padding:5px 10px;font-size:11px;}
-    pre{background:#0a0c0f;padding:10px;border-radius:8px;font-size:11.5px;overflow:auto;color:#b9c2d0;white-space:pre-wrap;}
-    /* modal */
-    .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:50;}
-    .modal{background:var(--panel);border:1px solid var(--line);border-radius:12px;width:min(600px,94vw);max-height:88vh;overflow:auto;}
-    .modal h3{margin:0;padding:14px 18px;border-bottom:1px solid var(--line);font-size:15px;}
-    .modal .b{padding:16px 18px;}
-    .kv{display:grid;grid-template-columns:130px 1fr;gap:6px 12px;font-size:13px;}
-    .kv b{color:var(--mut);font-weight:500;}
-    .tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;}
-    .tags span{font-size:10px;background:var(--panel2);border:1px solid var(--line);border-radius:4px;padding:1px 6px;}
-    .empty{color:var(--mut);padding:30px;text-align:center;}
-    /* sandbox / computer tab */
-    .sandbox-card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px;margin-bottom:10px;}
-    .sandbox-card .sn{font-weight:600;font-size:13px;color:var(--teal);}
-    .sandbox-card .ss{font-size:11px;color:var(--mut);margin-top:3px;}
-    .browser-card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px;margin-bottom:10px;}
-    .browser-card .bn{font-weight:600;font-size:13px;color:var(--blue);}
-    .browser-card .bs{font-size:11px;color:var(--mut);margin-top:3px;}
-    /* pill statuses */
-    .pill{display:inline-block;font-size:10px;padding:1px 8px;border-radius:10px;margin-left:8px;}
-    .pill.running{background:rgba(29,211,154,.12);color:var(--acc2);}
-    .pill.browser{background:rgba(96,165,250,.12);color:var(--blue);}
+
+    /* ── Reset ── */
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; }
+    body {
+      background: var(--bg);
+      color: var(--txt);
+      font: 14px/1.55 -apple-system, Segoe UI, Roboto, Helvetica, sans-serif;
+    }
+    a { color: var(--acc2); }
+    button { touch-action: manipulation; }
+
+    /* ── Mobile-first layout: single column ── */
+    .layout {
+      display: flex;
+      height: 100dvh;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* ── Sidebar ── */
+    .side {
+      position: fixed;
+      top: 0; left: 0; bottom: 0;
+      width: var(--sidebar-w);
+      background: var(--side);
+      border-right: 1px solid var(--line);
+      display: flex;
+      flex-direction: column;
+      padding: 14px 10px;
+      z-index: 200;
+      /* hidden off-screen on mobile by default */
+      transform: translateX(-100%);
+      transition: transform 0.25s cubic-bezier(.4,0,.2,1);
+      overflow-y: auto;
+    }
+    .side.open {
+      transform: translateX(0);
+      box-shadow: 4px 0 32px rgba(0,0,0,.6);
+    }
+
+    /* Overlay behind open drawer */
+    .drawer-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.55);
+      z-index: 190;
+    }
+    .drawer-overlay.open { display: block; }
+
+    .brand {
+      font-size: 18px;
+      font-weight: 700;
+      padding: 6px 10px 14px;
+      letter-spacing: .3px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .brand span { color: var(--acc2); }
+    .brand .close-drawer {
+      margin-left: auto;
+      background: none;
+      border: none;
+      color: var(--mut);
+      font-size: 20px;
+      cursor: pointer;
+      padding: 4px;
+      line-height: 1;
+    }
+
+    .nav { display: flex; flex-direction: column; gap: 2px; }
+    .nav button {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: none;
+      border: none;
+      color: var(--mut);
+      text-align: left;
+      padding: 12px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      width: 100%;
+      min-height: 44px;
+    }
+    .nav button:hover  { background: var(--panel); color: var(--txt); }
+    .nav button.active { background: var(--panel2); color: var(--txt); }
+    .nav .ico { width: 20px; text-align: center; font-size: 16px; }
+
+    .side .spacer { flex: 1; }
+
+    .side .stat {
+      padding: 10px 12px;
+      border-top: 1px solid var(--line);
+      font-size: 12px;
+      color: var(--mut);
+    }
+    .side .stat .rev  { font-size: 20px; font-weight: 700; color: var(--gold); }
+    .side .stat b     { color: var(--acc2); font-weight: 600; }
+    .side .stat .sbox { font-size: 11px; color: var(--teal); }
+
+    /* ── Connect from Phone card (in sidebar) ── */
+    .qr-card {
+      margin: 8px 0 0;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 12px;
+    }
+    .qr-card .qr-title {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--mut);
+      margin-bottom: 8px;
+    }
+    .qr-card .qr-url {
+      font-size: 11px;
+      color: var(--acc2);
+      word-break: break-all;
+      background: var(--panel2);
+      border-radius: 6px;
+      padding: 6px 8px;
+      margin-bottom: 8px;
+      cursor: pointer;
+      user-select: all;
+    }
+    .qr-card .qr-meta {
+      font-size: 10px;
+      color: var(--mut);
+    }
+    .qr-card .qr-copy-btn {
+      margin-top: 8px;
+      width: 100%;
+      background: var(--panel2);
+      border: 1px solid var(--line);
+      color: var(--txt);
+      border-radius: 7px;
+      padding: 8px;
+      font-size: 12px;
+      cursor: pointer;
+      min-height: 36px;
+    }
+    .qr-card .qr-copy-btn:hover { border-color: var(--acc); color: var(--acc2); }
+
+    /* ── Main content area ── */
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      width: 100%;
+      /* leave room for bottom nav on mobile */
+      padding-bottom: var(--bottom-nav-h);
+      height: 100dvh;
+      overflow: hidden;
+    }
+
+    /* ── Top bar ── */
+    .topbar {
+      height: 52px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0 14px;
+      flex-shrink: 0;
+    }
+    .topbar .hamburger {
+      background: none;
+      border: none;
+      color: var(--txt);
+      font-size: 20px;
+      cursor: pointer;
+      padding: 6px;
+      border-radius: 6px;
+      min-width: 44px;
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .topbar .hamburger:hover { background: var(--panel); }
+    .topbar h2 { font-size: 15px; margin: 0; font-weight: 600; }
+    .topbar .who { margin-left: auto; font-size: 12px; color: var(--mut); }
+
+    /* ── Scrollable content ── */
+    .content { flex: 1; overflow-y: auto; overflow-x: hidden; }
+
+    /* ── Bottom Nav (mobile only) ── */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      height: var(--bottom-nav-h);
+      background: var(--side);
+      border-top: 1px solid var(--line);
+      display: flex;
+      align-items: stretch;
+      z-index: 150;
+    }
+    .bottom-nav button {
+      flex: 1;
+      background: none;
+      border: none;
+      color: var(--mut);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      font-size: 10px;
+      cursor: pointer;
+      padding: 6px 4px;
+      min-height: 44px;
+      transition: color .15s;
+    }
+    .bottom-nav button.active { color: var(--acc2); }
+    .bottom-nav button .bn-ico { font-size: 18px; line-height: 1; }
+
+    /* ── Floating Phone Connect button (mobile only) ── */
+    .phone-fab {
+      position: fixed;
+      right: 14px;
+      bottom: calc(var(--bottom-nav-h) + 12px);
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      color: var(--txt);
+      font-size: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 140;
+      box-shadow: 0 2px 16px rgba(0,0,0,.4);
+    }
+    .phone-fab:hover { border-color: var(--acc); }
+
+    /* Phone Connect modal */
+    .phone-modal-bg {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.65);
+      z-index: 300;
+      display: flex;
+      align-items: flex-end;
+      padding: 0;
+    }
+    .phone-modal {
+      width: 100%;
+      background: var(--panel);
+      border-top: 1px solid var(--line);
+      border-radius: 18px 18px 0 0;
+      padding: 20px 20px 36px;
+    }
+    .phone-modal h3 {
+      margin: 0 0 14px;
+      font-size: 16px;
+    }
+    .phone-modal .pm-url {
+      font-size: 13px;
+      color: var(--acc2);
+      word-break: break-all;
+      background: var(--panel2);
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin-bottom: 12px;
+      cursor: pointer;
+      user-select: all;
+    }
+    .phone-modal .pm-meta { font-size: 12px; color: var(--mut); margin-bottom: 16px; }
+    .phone-modal .pm-copy {
+      width: 100%;
+      background: var(--acc);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 14px;
+      font-size: 15px;
+      cursor: pointer;
+      min-height: 50px;
+      margin-bottom: 10px;
+    }
+    .phone-modal .pm-close {
+      width: 100%;
+      background: var(--panel2);
+      color: var(--txt);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 12px;
+      font-size: 14px;
+      cursor: pointer;
+      min-height: 44px;
+    }
+
+    /* ── Chat ── */
+    .chat-wrap {
+      max-width: 780px;
+      margin: 0 auto;
+      padding: 20px 14px 130px;
+    }
+    .bubble { display: flex; gap: 10px; margin: 16px 0; }
+    .bubble .av {
+      width: 30px;
+      height: 30px;
+      border-radius: 7px;
+      flex: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .bubble.user .av      { background: var(--user); color: var(--txt); }
+    .bubble.assistant .av { background: var(--acc);  color: #fff; }
+    .bubble .body { flex: 1; min-width: 0; }
+    .bubble .name { font-size: 12px; color: var(--mut); margin-bottom: 3px; }
+    .bubble .text { white-space: pre-wrap; word-wrap: break-word; }
+    .bubble.error .text   { color: var(--warn); }
+    .bubble.command .text {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 13px;
+    }
+    .text code { background: #0a0c0f; padding: 1px 5px; border-radius: 4px; font-size: 12px; }
+    .text b    { color: #fff; }
+
+    /* Composer */
+    .composer {
+      position: fixed;
+      bottom: var(--bottom-nav-h);
+      left: 0;
+      right: 0;
+      background: linear-gradient(transparent, var(--bg) 28%);
+      padding: 12px 14px 14px;
+      z-index: 100;
+    }
+    .composer .inner {
+      max-width: 780px;
+      margin: 0 auto;
+      display: flex;
+      gap: 8px;
+      align-items: flex-end;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 8px 8px 8px 12px;
+    }
+    .composer select {
+      background: var(--panel2);
+      color: var(--txt);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 8px 6px;
+      font-size: 12px;
+      max-width: 100px;
+      min-height: 38px;
+    }
+    .composer textarea {
+      flex: 1;
+      background: none;
+      border: none;
+      color: var(--txt);
+      resize: none;
+      font: 14px/1.5 inherit;
+      max-height: 140px;
+      outline: none;
+      padding: 8px 0;
+    }
+    .composer .send-btn {
+      background: var(--acc);
+      color: #fff;
+      border: none;
+      border-radius: 9px;
+      width: 42px;
+      height: 42px;
+      font-size: 17px;
+      cursor: pointer;
+      flex: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 42px;
+    }
+    .composer .send-btn:disabled { opacity: .4; cursor: default; }
+    .hint {
+      max-width: 780px;
+      margin: 5px auto 0;
+      font-size: 11px;
+      color: var(--mut);
+      text-align: center;
+    }
+    .hint code {
+      background: var(--panel2);
+      padding: 1px 5px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    /* ── Generic card/list styles ── */
+    .pad { padding: 16px; }
+    .grid { display: grid; gap: 12px; }
+    .empty { color: var(--mut); padding: 30px; text-align: center; }
+
+    /* Org */
+    .org-tier { margin-bottom: 18px; }
+    .org-tier .lbl {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--mut);
+      margin: 0 0 8px;
+    }
+    .agents {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 10px;
+    }
+    .agent {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 12px;
+      cursor: pointer;
+      transition: .15s;
+      min-height: 44px;
+    }
+    .agent:hover { border-color: var(--acc); }
+    .agent .nm { font-weight: 600; display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--mut); }
+    .dot.on       { background: var(--acc2); }
+    .dot.err      { background: var(--warn); }
+    .dot.off      { background: #475063; }
+    .dot.planning { background: var(--teal); box-shadow: 0 0 6px var(--teal); }
+    .agent .mt  { font-size: 11px; color: var(--mut); margin-top: 4px; }
+    .agent .gl  { font-size: 11.5px; color: #b9c2d0; margin-top: 7px; max-height: 48px; overflow: hidden; }
+    .agent .plan-badge { font-size: 10px; color: var(--teal); margin-top: 5px; font-style: italic; max-height: 32px; overflow: hidden; }
+
+    /* Card */
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      overflow: hidden;
+      margin-bottom: 14px;
+    }
+    .card h3 {
+      margin: 0;
+      padding: 12px 16px;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--mut);
+      border-bottom: 1px solid var(--line);
+    }
+    .row {
+      padding: 9px 16px;
+      border-bottom: 1px solid var(--line);
+      font-size: 12.5px;
+    }
+    .row:last-child  { border-bottom: none; }
+    .row.plan-row    { border-left: 3px solid var(--teal); padding-left: 13px; }
+    .row.plan-row .act { color: var(--teal); }
+    .badge {
+      display: inline-block;
+      font-size: 10px;
+      padding: 1px 6px;
+      border-radius: 4px;
+      background: var(--panel2);
+      color: var(--mut);
+      margin-left: 6px;
+    }
+    .badge.approval   { color: var(--acc2); }
+    .badge.rejection  { color: var(--warn); }
+    .badge.directive  { color: var(--gold); }
+    .who2 { color: var(--acc2); }
+    .to2  { color: var(--gold); }
+    .arr  { color: var(--mut); }
+    .act  { color: var(--blue); }
+    .ag   { color: var(--mut); }
+
+    /* Activity grid — stacked on mobile */
+    .activity-grid {
+      display: grid;
+      gap: 14px;
+      grid-template-columns: 1fr;
+    }
+
+    /* Skills */
+    .skill {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 14px;
+      margin-bottom: 10px;
+    }
+    .skill .sn { font-weight: 600; font-size: 15px; }
+    .skill .sd { color: var(--mut); font-size: 13px; margin: 4px 0 8px; }
+    .skill .files { font-size: 11px; color: var(--mut); }
+    .installbar { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+    .installbar input {
+      flex: 1;
+      min-width: 0;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      color: var(--txt);
+      padding: 10px 12px;
+      font-size: 13px;
+      outline: none;
+      min-height: 44px;
+    }
+
+    /* Buttons */
+    button.btn {
+      background: var(--panel2);
+      color: var(--txt);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 13px;
+      cursor: pointer;
+      min-height: 44px;
+    }
+    button.btn:hover  { border-color: var(--acc); color: var(--acc2); }
+    button.btn.primary { background: var(--acc); color: #fff; border-color: var(--acc); }
+    button.btn.danger:hover { border-color: var(--warn); color: var(--warn); }
+    button.btn.sm  { padding: 6px 10px; font-size: 11px; min-height: 36px; }
+
+    pre {
+      background: #0a0c0f;
+      padding: 10px;
+      border-radius: 8px;
+      font-size: 11.5px;
+      overflow: auto;
+      color: #b9c2d0;
+      white-space: pre-wrap;
+    }
+
+    /* Sandboxes */
+    .sandbox-grid {
+      display: grid;
+      gap: 14px;
+      grid-template-columns: 1fr;
+    }
+    .sandbox-card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 14px;
+      margin-bottom: 10px;
+    }
+    .sandbox-card .sn { font-weight: 600; font-size: 13px; color: var(--teal); }
+    .sandbox-card .ss { font-size: 11px; color: var(--mut); margin-top: 3px; }
+    .browser-card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 14px;
+      margin-bottom: 10px;
+    }
+    .browser-card .bn { font-weight: 600; font-size: 13px; color: var(--blue); }
+    .browser-card .bs { font-size: 11px; color: var(--mut); margin-top: 3px; }
+
+    /* Pills */
+    .pill { display: inline-block; font-size: 10px; padding: 1px 8px; border-radius: 10px; margin-left: 6px; }
+    .pill.running { background: rgba(29,211,154,.12); color: var(--acc2); }
+    .pill.browser { background: rgba(96,165,250,.12); color: var(--blue); }
+
+    /* Agent modal */
+    .modal-bg {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.6);
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      z-index: 400;
+    }
+    .modal {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 16px 16px 0 0;
+      width: 100%;
+      max-height: 90dvh;
+      overflow: auto;
+    }
+    .modal h3 { margin: 0; padding: 14px 18px; border-bottom: 1px solid var(--line); font-size: 15px; }
+    .modal .b  { padding: 16px 18px; }
+    .kv {
+      display: grid;
+      grid-template-columns: 110px 1fr;
+      gap: 6px 12px;
+      font-size: 13px;
+    }
+    .kv b { color: var(--mut); font-weight: 500; }
+    .tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+    .tags span {
+      font-size: 10px;
+      background: var(--panel2);
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      padding: 1px 6px;
+    }
+    .modal-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 14px;
+    }
+    .modal-actions button { flex: 1 1 auto; min-width: 100px; }
+
+    /* ── Desktop overrides (≥768px) ── */
+    @media (min-width: 768px) {
+      body { display: flex; }
+
+      .layout { display: flex; }
+
+      /* Sidebar always visible on desktop */
+      .side {
+        position: relative;
+        transform: none !important;
+        box-shadow: none !important;
+        flex-shrink: 0;
+        overflow-y: auto;
+      }
+
+      /* No drawer overlay needed */
+      .drawer-overlay { display: none !important; }
+
+      /* Close button hidden on desktop */
+      .brand .close-drawer { display: none; }
+
+      /* Main area offset by sidebar */
+      .main {
+        padding-bottom: 0;
+        width: calc(100% - var(--sidebar-w));
+      }
+
+      /* No hamburger on desktop */
+      .topbar .hamburger { display: none; }
+
+      /* Composer sits above the bottom of main (not fixed to bottom-nav) */
+      .composer {
+        bottom: 0;
+        left: 0;  /* relative to .main, which already starts after sidebar */
+      }
+
+      /* Hide bottom nav */
+      .bottom-nav { display: none; }
+
+      /* Hide phone FAB */
+      .phone-fab { display: none; }
+
+      /* Activity grid — 2 columns on desktop */
+      .activity-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      /* Sandbox grid — 2 columns on desktop */
+      .sandbox-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      /* Agent modal centered, not bottom-sheet */
+      .modal-bg { align-items: center; }
+      .modal {
+        border-radius: 12px;
+        width: min(620px, 94vw);
+        max-height: 88dvh;
+      }
+
+      /* Phone connect modal centered */
+      .phone-modal-bg { align-items: center; padding: 20px; }
+      .phone-modal {
+        border-radius: 12px;
+        max-width: 400px;
+        padding: 24px;
+      }
+    }
   </style>
 </head>
-<body x-data="app()" x-init="init()">
-  <!-- Sidebar -->
-  <aside class="side">
-    <div class="brand">Auto<span>Earn</span></div>
+<body>
+<div class="layout" x-data="app()" x-init="init()">
+
+  <!-- Drawer overlay (mobile) -->
+  <div class="drawer-overlay" :class="drawerOpen&&'open'" @click="drawerOpen=false"></div>
+
+  <!-- ── Sidebar ── -->
+  <aside class="side" :class="drawerOpen&&'open'">
+    <div class="brand">
+      Auto<span>Earn</span>
+      <button class="close-drawer" @click="drawerOpen=false" aria-label="Close menu">✕</button>
+    </div>
+
     <nav class="nav">
-      <button :class="tab==='chat'&&'active'" @click="tab='chat'"><span class="ico">💬</span> Chat</button>
-      <button :class="tab==='org'&&'active'" @click="tab='org'"><span class="ico">🏢</span> Organization</button>
-      <button :class="tab==='skills'&&'active'" @click="tab='skills'"><span class="ico">🧩</span> Skills</button>
-      <button :class="tab==='activity'&&'active'" @click="tab='activity'"><span class="ico">📊</span> Activity</button>
-      <button :class="tab==='computer'&&'active'" @click="tab='computer'"><span class="ico">🖥️</span> Sandboxes</button>
+      <button :class="tab==='chat'&&'active'" @click="tab='chat';drawerOpen=false">
+        <span class="ico">💬</span> Chat
+      </button>
+      <button :class="tab==='org'&&'active'" @click="tab='org';drawerOpen=false">
+        <span class="ico">🏢</span> Organization
+      </button>
+      <button :class="tab==='skills'&&'active'" @click="tab='skills';drawerOpen=false">
+        <span class="ico">🧩</span> Skills
+      </button>
+      <button :class="tab==='activity'&&'active'" @click="tab='activity';drawerOpen=false">
+        <span class="ico">📊</span> Activity
+      </button>
+      <button :class="tab==='computer'&&'active'" @click="tab='computer';drawerOpen=false">
+        <span class="ico">🖥️</span> Sandboxes
+      </button>
     </nav>
+
     <div class="spacer"></div>
+
+    <!-- Stats -->
     <div class="stat">
       <div class="rev" x-text="'$'+(revenue.total_usd||0).toFixed(2)"></div>
       total revenue · <span x-text="agents.length"></span> agents
@@ -141,16 +761,31 @@
     <div class="stat" x-show="sandboxes.browsers&&sandboxes.browsers.length">
       <div class="sbox">🌐 <span x-text="sandboxes.browsers.length"></span> browser session<span x-text="sandboxes.browsers.length!==1?'s':''"></span></div>
     </div>
+
+    <!-- Connect from Phone card (sidebar) -->
+    <div class="qr-card" x-show="networkInfo.url">
+      <div class="qr-title">📱 Connect from Phone</div>
+      <div class="qr-url" x-text="networkInfo.url" @click="copyUrl(networkInfo.url)"></div>
+      <div class="qr-meta" x-text="networkInfo.local_ip+':'+networkInfo.port"></div>
+      <button class="qr-copy-btn" @click="copyUrl(networkInfo.url)" x-text="urlCopied?'✓ Copied!':'Copy URL'"></button>
+    </div>
+    <div class="qr-card" x-show="!networkInfo.url" style="text-align:center;">
+      <div class="qr-title">📱 Connect from Phone</div>
+      <div class="qr-meta">Fetching network info…</div>
+    </div>
   </aside>
 
-  <!-- Main -->
+  <!-- ── Main ── -->
   <div class="main" style="position:relative;">
+
+    <!-- Top bar -->
     <div class="topbar">
+      <button class="hamburger" @click="drawerOpen=!drawerOpen" aria-label="Open menu">☰</button>
       <h2 x-text="{chat:'Chat',org:'Organization',skills:'Skills',activity:'Activity',computer:'Sandboxes & Computer Use'}[tab]"></h2>
-      <div class="who" x-show="tab==='chat'">talking to <b x-text="chatAgent"></b></div>
+      <div class="who" x-show="tab==='chat'">→ <b x-text="chatAgent"></b></div>
     </div>
 
-    <!-- CHAT -->
+    <!-- ════ CHAT ════ -->
     <div class="content" x-show="tab==='chat'" x-ref="chatScroll">
       <div class="chat-wrap">
         <template x-if="!messages.length">
@@ -172,23 +807,41 @@
           </div>
         </template>
         <template x-if="thinking">
-          <div class="bubble assistant"><div class="av">AE</div><div class="body"><div class="name" x-text="chatAgent"></div><div class="text" style="color:var(--mut)">thinking…</div></div></div>
+          <div class="bubble assistant">
+            <div class="av">AE</div>
+            <div class="body">
+              <div class="name" x-text="chatAgent"></div>
+              <div class="text" style="color:var(--mut)">thinking…</div>
+            </div>
+          </div>
         </template>
       </div>
     </div>
+
+    <!-- Composer (chat) -->
     <div class="composer" x-show="tab==='chat'">
       <div class="inner">
         <select x-model="chatAgent">
-          <template x-for="a in agents" :key="a.name"><option :value="a.name" x-text="a.name"></option></template>
+          <template x-for="a in agents" :key="a.name">
+            <option :value="a.name" x-text="a.name"></option>
+          </template>
         </select>
-        <textarea x-model="input" rows="1" placeholder="Message the organization, or /command…"
-          @keydown.enter.prevent="if(!$event.shiftKey)send()" @input="autosize($event)"></textarea>
-        <button @click="send()" :disabled="thinking||!input.trim()">➤</button>
+        <textarea
+          x-model="input"
+          rows="1"
+          placeholder="Message the organization, or /command…"
+          @keydown.enter.prevent="if(!$event.shiftKey)send()"
+          @input="autosize($event)">
+        </textarea>
+        <button class="send-btn" @click="send()" :disabled="thinking||!input.trim()">➤</button>
       </div>
-      <div class="hint">Enter to send · Shift+Enter for newline · <code @click="input='/';document.querySelector('.composer textarea').focus()">/</code> for commands</div>
+      <div class="hint">
+        Enter to send · Shift+Enter for newline ·
+        <code @click="input='/';$nextTick(()=>document.querySelector('.composer textarea').focus())">/</code> for commands
+      </div>
     </div>
 
-    <!-- ORG -->
+    <!-- ════ ORG ════ -->
     <div class="content" x-show="tab==='org'">
       <div class="pad">
         <template x-for="tier in ['council','team','qc']" :key="tier">
@@ -200,8 +853,8 @@
                   <div class="nm">
                     <span class="dot" :class="agentDotClass(a)"></span>
                     <span x-text="a.name"></span>
-                    <span class="pill browser" x-show="isAgentBrowsing(a.name)">🌐 browsing</span>
-                    <span class="pill running" x-show="isAgentSandboxed(a.name)">🐳 sandbox</span>
+                    <span class="pill browser" x-show="isAgentBrowsing(a.name)">🌐</span>
+                    <span class="pill running" x-show="isAgentSandboxed(a.name)">🐳</span>
                   </div>
                   <div class="mt"><span x-text="a.team||a.role"></span> · <span x-text="a.model"></span> · every <span x-text="a.interval_minutes"></span>m</div>
                   <div class="mt" x-show="a.runs">runs <span x-text="a.runs"></span> · errors <span x-text="a.errors"></span></div>
@@ -215,73 +868,99 @@
       </div>
     </div>
 
-    <!-- SKILLS -->
+    <!-- ════ SKILLS ════ -->
     <div class="content" x-show="tab==='skills'">
       <div class="pad">
         <div class="installbar">
-          <input x-model="skillSource" placeholder="Install a skill: local path, git URL, or .zip URL" @keydown.enter="installSkill()">
+          <input
+            x-model="skillSource"
+            placeholder="Install a skill: local path, git URL, or .zip URL"
+            @keydown.enter="installSkill()">
           <button class="btn primary" @click="installSkill()" :disabled="skillBusy">Install</button>
         </div>
-        <div x-show="skillMsg" class="row" style="border-radius:8px;border:1px solid var(--line);margin-bottom:14px" x-text="skillMsg"></div>
-        <template x-if="!skills.length"><div class="empty">No skills installed yet. Any Claude skill (a folder with SKILL.md) works — paste a path or URL above.</div></template>
+        <div
+          x-show="skillMsg"
+          class="row"
+          style="border-radius:8px;border:1px solid var(--line);margin-bottom:14px"
+          x-text="skillMsg">
+        </div>
+        <template x-if="!skills.length">
+          <div class="empty">No skills installed yet. Any Claude skill (a folder with SKILL.md) works — paste a path or URL above.</div>
+        </template>
         <template x-for="s in skills" :key="s.name">
           <div class="skill">
             <div class="sn" x-text="s.name"></div>
             <div class="sd" x-text="s.description"></div>
             <div class="files">files: <span x-text="(s.files||[]).join(', ')||'—'"></span></div>
-            <div style="margin-top:10px;display:flex;gap:8px">
+            <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;">
               <button class="btn sm" @click="runSkill(s.name)">▶ Run</button>
               <button class="btn sm danger" @click="removeSkill(s.name)">Remove</button>
             </div>
-            <div x-show="skillOut[s.name]" style="margin-top:10px"><pre x-text="skillOut[s.name]"></pre></div>
+            <div x-show="skillOut[s.name]" style="margin-top:10px">
+              <pre x-text="skillOut[s.name]"></pre>
+            </div>
           </div>
         </template>
       </div>
     </div>
 
-    <!-- ACTIVITY -->
+    <!-- ════ ACTIVITY ════ -->
     <div class="content" x-show="tab==='activity'">
-      <div class="pad grid" style="grid-template-columns:1fr 1fr">
-        <div>
-          <div class="card">
-            <h3>Revenue</h3>
-            <div class="row"><b x-text="'$'+(revenue.total_usd||0).toFixed(2)"></b> total</div>
-            <template x-for="s in revenue.by_source" :key="s.source">
-              <div class="row"><span class="ag" x-text="s.source||'(unattributed)'"></span> — $<span x-text="s.amount.toFixed(2)"></span></div>
-            </template>
-          </div>
-          <div class="card">
-            <h3>Message Bus</h3>
-            <template x-for="m in busMessages" :key="m.id">
-              <div class="row"><span class="who2" x-text="m.from_agent"></span> <span class="arr">→</span> <span class="to2" x-text="m.to_agent"></span><span class="badge" :class="m.type" x-text="m.type"></span><div class="ag" x-text="m.subject"></div></div>
-            </template>
-            <template x-if="!busMessages.length"><div class="row ag">No messages yet.</div></template>
-          </div>
-        </div>
-        <div class="card">
-          <h3>Activity Log <span style="font-size:10px;color:var(--teal);font-weight:400;text-transform:none;letter-spacing:0">· teal = agent plan</span></h3>
-          <template x-for="l in logs" :key="l.id">
-            <div class="row" :class="l.action==='plan'?'plan-row':''">
-              <span class="ag" x-text="l.agent"></span>
-              <span class="act" x-text="l.action"></span>
-              <span class="ag" x-text="(l.detail||'').slice(0,90)"></span>
+      <div class="pad">
+        <div class="activity-grid">
+          <div>
+            <div class="card">
+              <h3>Revenue</h3>
+              <div class="row"><b x-text="'$'+(revenue.total_usd||0).toFixed(2)"></b> total</div>
+              <template x-for="s in revenue.by_source" :key="s.source">
+                <div class="row">
+                  <span class="ag" x-text="s.source||'(unattributed)'"></span> — $<span x-text="s.amount.toFixed(2)"></span>
+                </div>
+              </template>
             </div>
-          </template>
-          <template x-if="!logs.length"><div class="row ag">No activity yet.</div></template>
+            <div class="card">
+              <h3>Message Bus</h3>
+              <template x-for="m in busMessages" :key="m.id">
+                <div class="row">
+                  <span class="who2" x-text="m.from_agent"></span>
+                  <span class="arr"> → </span>
+                  <span class="to2" x-text="m.to_agent"></span>
+                  <span class="badge" :class="m.type" x-text="m.type"></span>
+                  <div class="ag" x-text="m.subject"></div>
+                </div>
+              </template>
+              <template x-if="!busMessages.length">
+                <div class="row ag">No messages yet.</div>
+              </template>
+            </div>
+          </div>
+          <div class="card">
+            <h3>Activity Log <span style="font-size:10px;color:var(--teal);font-weight:400;text-transform:none;letter-spacing:0">· teal = agent plan</span></h3>
+            <template x-for="l in logs" :key="l.id">
+              <div class="row" :class="l.action==='plan'?'plan-row':''">
+                <span class="ag" x-text="l.agent"></span>
+                <span class="act"> </span><span class="act" x-text="l.action"></span>
+                <span class="ag"> </span><span class="ag" x-text="(l.detail||'').slice(0,90)"></span>
+              </div>
+            </template>
+            <template x-if="!logs.length">
+              <div class="row ag">No activity yet.</div>
+            </template>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- COMPUTER / SANDBOXES -->
+    <!-- ════ COMPUTER / SANDBOXES ════ -->
     <div class="content" x-show="tab==='computer'">
       <div class="pad">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div class="sandbox-grid">
 
           <!-- Docker Sandboxes -->
           <div>
             <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--mut);margin-bottom:10px;">🐳 Docker Sandboxes</div>
             <template x-if="!sandboxes.containers||!sandboxes.containers.length">
-              <div class="empty" style="background:var(--panel);border-radius:10px;border:1px solid var(--line);padding:30px;text-align:center;color:var(--mut);">
+              <div class="empty" style="background:var(--panel);border-radius:10px;border:1px solid var(--line);padding:28px;text-align:center;color:var(--mut);">
                 No sandbox containers running.<br>
                 <small>Containers start automatically when agents use sandbox_* tools.<br>Requires Docker to be running on the host.</small>
               </div>
@@ -290,20 +969,22 @@
               <div class="sandbox-card">
                 <div class="sn" x-text="c.name"></div>
                 <div class="ss"><span x-text="c.status"></span> · <span x-text="c.size||'—'"></span></div>
-                <div style="margin-top:8px;display:flex;gap:6px;">
+                <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;">
                   <button class="btn sm" @click="sandboxCmd(c.name)">▶ Exec</button>
                   <button class="btn sm danger" @click="destroySandbox(c.name)">Destroy</button>
                 </div>
-                <div x-show="sandboxOut[c.name]" style="margin-top:8px"><pre x-text="sandboxOut[c.name]"></pre></div>
+                <div x-show="sandboxOut[c.name]" style="margin-top:8px">
+                  <pre x-text="sandboxOut[c.name]"></pre>
+                </div>
               </div>
             </template>
           </div>
 
-          <!-- Active Browser Sessions -->
+          <!-- Browser Sessions -->
           <div>
             <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--mut);margin-bottom:10px;">🌐 Browser Sessions</div>
             <template x-if="!sandboxes.browsers||!sandboxes.browsers.length">
-              <div class="empty" style="background:var(--panel);border-radius:10px;border:1px solid var(--line);padding:30px;text-align:center;color:var(--mut);">
+              <div class="empty" style="background:var(--panel);border-radius:10px;border:1px solid var(--line);padding:28px;text-align:center;color:var(--mut);">
                 No browser sessions active.<br>
                 <small>Sessions open when agents use browser_* tools.<br>Uses headless Chromium via Playwright — no display needed.</small>
               </div>
@@ -312,13 +993,13 @@
               <div class="browser-card">
                 <div class="bn">🌐 <span x-text="name"></span></div>
                 <div class="bs">Active Playwright session</div>
-                <div style="margin-top:8px;display:flex;gap:6px;">
+                <div style="margin-top:8px;">
                   <button class="btn sm" @click="chatAgent=name;tab='chat'">💬 Chat with agent</button>
                 </div>
               </div>
             </template>
 
-            <!-- Computer use info -->
+            <!-- Computer use capabilities -->
             <div class="card" style="margin-top:16px;">
               <h3>Computer Use Capabilities</h3>
               <div class="row">
@@ -335,35 +1016,92 @@
               </div>
             </div>
           </div>
+
         </div>
       </div>
     </div>
-  </div>
 
-  <!-- Agent modal -->
+  </div><!-- /.main -->
+
+  <!-- ── Bottom Nav (mobile only) ── -->
+  <nav class="bottom-nav">
+    <button :class="tab==='chat'&&'active'" @click="tab='chat'">
+      <span class="bn-ico">💬</span>Chat
+    </button>
+    <button :class="tab==='org'&&'active'" @click="tab='org'">
+      <span class="bn-ico">🏢</span>Org
+    </button>
+    <button :class="tab==='skills'&&'active'" @click="tab='skills'">
+      <span class="bn-ico">🧩</span>Skills
+    </button>
+    <button :class="tab==='activity'&&'active'" @click="tab='activity'">
+      <span class="bn-ico">📊</span>Activity
+    </button>
+    <button :class="tab==='computer'&&'active'" @click="tab='computer'">
+      <span class="bn-ico">🖥️</span>Sandboxes
+    </button>
+  </nav>
+
+  <!-- ── Phone FAB (mobile only) ── -->
+  <button class="phone-fab" @click="phoneModalOpen=true" aria-label="Connect from phone" title="Connect from Phone">📱</button>
+
+  <!-- ── Phone Connect modal (mobile) ── -->
+  <template x-if="phoneModalOpen">
+    <div class="phone-modal-bg" @click.self="phoneModalOpen=false">
+      <div class="phone-modal">
+        <h3>📱 Connect from Phone</h3>
+        <template x-if="networkInfo.url">
+          <div>
+            <div class="pm-url" x-text="networkInfo.url" @click="copyUrl(networkInfo.url)"></div>
+            <div class="pm-meta">Local IP: <b x-text="networkInfo.local_ip"></b> · Port: <b x-text="networkInfo.port"></b><br>Make sure your phone is on the same Wi-Fi network.</div>
+          </div>
+        </template>
+        <template x-if="!networkInfo.url">
+          <div class="pm-meta" style="margin-bottom:16px;">Fetching network info…</div>
+        </template>
+        <button class="pm-copy" @click="copyUrl(networkInfo.url)" x-text="urlCopied?'✓ URL Copied!':'Copy URL'"></button>
+        <button class="pm-close" @click="phoneModalOpen=false">Close</button>
+      </div>
+    </div>
+  </template>
+
+  <!-- ── Agent detail modal ── -->
   <template x-if="selected">
     <div class="modal-bg" @click.self="selected=null">
       <div class="modal">
         <h3 x-text="selected.name+' · '+selected.role"></h3>
         <div class="b">
           <div class="kv">
-            <b>Goal</b><span x-text="selected.goal"></span>
-            <b>Team</b><span x-text="selected.team||'—'"></span>
-            <b>Model</b><span x-text="selected.model"></span>
-            <b>Interval</b><span x-text="selected.interval_minutes+' min'"></span>
-            <b>Budget</b><span x-text="'$'+(selected.budget_usd||0).toFixed(2)"></span>
-            <b>Runs / Errors</b><span x-text="selected.runs+' / '+selected.errors"></span>
+            <b>Goal</b>      <span x-text="selected.goal"></span>
+            <b>Team</b>      <span x-text="selected.team||'—'"></span>
+            <b>Model</b>     <span x-text="selected.model"></span>
+            <b>Interval</b>  <span x-text="selected.interval_minutes+' min'"></span>
+            <b>Budget</b>    <span x-text="'$'+(selected.budget_usd||0).toFixed(2)"></span>
+            <b>Runs / Errors</b> <span x-text="selected.runs+' / '+selected.errors"></span>
           </div>
           <div x-show="agentPlan(selected.name)" style="margin-top:12px">
             <b class="ag">Last plan</b>
             <div style="margin-top:4px;font-size:12px;color:var(--teal);font-style:italic;" x-text="agentPlan(selected.name)"></div>
           </div>
-          <div style="margin-top:12px"><b class="ag">Tools</b><div class="tags"><template x-for="t in selected.tools" :key="t"><span :style="t.startsWith('browser_')?'color:var(--blue)':t.startsWith('sandbox')?'color:var(--orange)':t.startsWith('mouse_')||t.startsWith('keyboard_')||t==='screenshot'?'color:var(--teal)':''" x-text="t"></span></template></div></div>
-          <div x-show="selected.last_result" style="margin-top:12px"><b class="ag">Last result</b><pre x-text="selected.last_result"></pre></div>
-          <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;">
+          <div style="margin-top:12px">
+            <b class="ag">Tools</b>
+            <div class="tags">
+              <template x-for="t in selected.tools" :key="t">
+                <span
+                  :style="t.startsWith('browser_')?'color:var(--blue)':t.startsWith('sandbox')?'color:var(--orange)':t.startsWith('mouse_')||t.startsWith('keyboard_')||t==='screenshot'?'color:var(--teal)':''"
+                  x-text="t">
+                </span>
+              </template>
+            </div>
+          </div>
+          <div x-show="selected.last_result" style="margin-top:12px">
+            <b class="ag">Last result</b>
+            <pre x-text="selected.last_result"></pre>
+          </div>
+          <div class="modal-actions">
             <button class="btn primary" @click="trigger(selected.name)">▶ Run now</button>
-            <button class="btn" @click="chatAgent=selected.name;tab='chat';selected=null">💬 Chat with</button>
-            <button class="btn" x-show="isAgentBrowsing(selected.name)" @click="selected=null;tab='computer'">🌐 Browser session</button>
+            <button class="btn" @click="chatAgent=selected.name;tab='chat';selected=null">💬 Chat</button>
+            <button class="btn" x-show="isAgentBrowsing(selected.name)" @click="selected=null;tab='computer'">🌐 Browser</button>
             <button class="btn" x-show="isAgentSandboxed(selected.name)" @click="selected=null;tab='computer'">🐳 Sandbox</button>
             <button class="btn" @click="selected=null">Close</button>
           </div>
@@ -372,106 +1110,244 @@
     </div>
   </template>
 
-  <script>
-    function app(){
-      return {
-        tab:'chat', agents:[], messages:[], busMessages:[], logs:[], revenue:{total_usd:0,by_source:[]},
-        providers:[], selected:null, input:'', chatAgent:'ceo', thinking:false,
-        skills:[], skillSource:'', skillMsg:'', skillBusy:false, skillOut:{},
-        sandboxes:{containers:[],browsers:[]}, sandboxOut:{},
-        init(){
-          this.refresh(); this.loadChat(); this.loadSkills();
-          setInterval(()=>this.refresh(), 5000);
-        },
-        async refresh(){
-          const [a,r,b,l,h,sb] = await Promise.all([
-            fetch('/api/agents').then(x=>x.json()).catch(()=>[]),
-            fetch('/api/revenue').then(x=>x.json()).catch(()=>({total_usd:0,by_source:[]})),
-            fetch('/api/messages?limit=30').then(x=>x.json()).catch(()=>[]),
-            fetch('/api/logs?limit=60').then(x=>x.json()).catch(()=>[]),
-            fetch('/api/health').then(x=>x.json()).catch(()=>({})),
-            fetch('/api/sandboxes').then(x=>x.json()).catch(()=>({containers:[],browsers:[]})),
-          ]);
-          this.agents=a; this.revenue=r; this.busMessages=b; this.logs=l;
-          this.providers=h.providers||[];
-          this.sandboxes=sb;
-          if(this.selected) this.selected=a.find(x=>x.name===this.selected.name)||this.selected;
-        },
-        async loadChat(){ this.messages=await fetch('/api/chat/history?limit=100').then(x=>x.json()).catch(()=>[]); this.scrollChat(); },
-        async loadSkills(){ this.skills=await fetch('/api/skills').then(x=>x.json()).catch(()=>[]); },
-        async send(){
-          const text=this.input.trim(); if(!text||this.thinking) return;
-          this.input=''; this.thinking=true;
-          this.messages.push({id:'tmp'+Date.now(),role:'user',content:text,kind:'text'});
-          this.scrollChat();
-          try{
-            await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:text,agent:this.chatAgent})});
-          }finally{ this.thinking=false; await this.loadChat(); if(text.startsWith('/'))this.loadSkills(),this.refresh(); }
-        },
-        render(t){
-          if(!t) return '';
-          let h=t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-          h=h.replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/`([^`]+)`/g,'<code>$1</code>');
-          return h;
-        },
-        scrollChat(){ this.$nextTick(()=>{ const el=this.$refs.chatScroll; if(el)el.scrollTop=el.scrollHeight; }); },
-        autosize(e){ e.target.style.height='auto'; e.target.style.height=Math.min(e.target.scrollHeight,160)+'px'; },
-        agentDotClass(a){
-          if(!a.enabled) return 'off';
-          if(a.errors>0&&(a.last_result||'').startsWith('ERROR')) return 'err';
-          // Pulsing teal if agent's last activity was a plan
-          const plan=this.agentPlan(a.name);
-          if(plan&&a.runs) return 'on planning';
-          return a.runs?'on':'';
-        },
-        dotClass(a){ return this.agentDotClass(a); },
-        agentPlan(name){
-          // Find the most recent plan log for this agent
-          const planLog = this.logs.find(l=>l.agent===name&&l.action==='plan');
-          if(!planLog) return '';
-          const detail = planLog.detail||'';
-          return detail.startsWith('No action') ? '' : detail.slice(0,100);
-        },
-        isAgentBrowsing(name){ return (this.sandboxes.browsers||[]).includes(name); },
-        isAgentSandboxed(name){
-          const cname = 'autoearn_'+name.toLowerCase().replace(/[^a-z0-9_]/g,'_')+'_sandbox';
-          return (this.sandboxes.containers||[]).some(c=>c.name===cname);
-        },
-        async trigger(n){ await fetch('/api/agents/'+n+'/trigger',{method:'POST'}); setTimeout(()=>this.refresh(),800); },
-        async installSkill(){
-          if(!this.skillSource.trim())return; this.skillBusy=true; this.skillMsg='Installing…';
-          try{
-            const r=await fetch('/api/skills/install',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({source:this.skillSource.trim()})});
-            const d=await r.json();
-            this.skillMsg = r.ok ? ('Installed '+d.name) : ('Error: '+(d.detail||'failed'));
-            if(r.ok){ this.skillSource=''; this.loadSkills(); }
-          }catch(e){ this.skillMsg='Error: '+e; } finally{ this.skillBusy=false; }
-        },
-        async runSkill(n){
-          const inp=prompt('Input for skill "'+n+'":','')||'';
-          this.skillOut[n]='Running…';
-          const r=await fetch('/api/skills/'+n+'/run',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({input:inp})});
-          const d=await r.json(); this.skillOut[n]=d.output;
-        },
-        async removeSkill(n){ if(!confirm('Remove skill "'+n+'"?'))return; await fetch('/api/skills/'+n,{method:'DELETE'}); this.loadSkills(); },
-        async sandboxCmd(containerName){
-          const agentName = containerName.replace(/^autoearn_/,'').replace(/_sandbox$/,'');
-          const cmd = prompt('Shell command to run in '+agentName+"'s sandbox:",'echo hello');
-          if(!cmd) return;
-          this.sandboxOut[containerName]='Running…';
-          const r=await fetch('/api/agents/'+agentName+'/trigger',{method:'POST'});
-          // Show a note — actual sandbox_exec goes through agent trigger
-          this.sandboxOut[containerName]='Triggered '+agentName+' (use chat to run sandbox_exec directly)';
-        },
-        async destroySandbox(containerName){
-          if(!confirm('Destroy sandbox '+containerName+'? The container will be deleted.')) return;
-          const agentName = containerName.replace(/^autoearn_/,'').replace(/_sandbox$/,'');
-          await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},
-            body:JSON.stringify({message:'/trigger '+agentName,agent:'cto'})});
-          setTimeout(()=>this.refresh(),1500);
-        },
-      };
-    }
-  </script>
+</div><!-- /.layout -->
+
+<script>
+  function app() {
+    return {
+      /* ── State ── */
+      tab: 'chat',
+      agents: [],
+      messages: [],
+      busMessages: [],
+      logs: [],
+      revenue: { total_usd: 0, by_source: [] },
+      providers: [],
+      selected: null,
+      input: '',
+      chatAgent: 'ceo',
+      thinking: false,
+      skills: [],
+      skillSource: '',
+      skillMsg: '',
+      skillBusy: false,
+      skillOut: {},
+      sandboxes: { containers: [], browsers: [] },
+      sandboxOut: {},
+      /* ── New state ── */
+      networkInfo: { url: '', local_ip: '', port: 4200 },
+      drawerOpen: false,
+      phoneModalOpen: false,
+      urlCopied: false,
+
+      /* ── Init ── */
+      init() {
+        this.refresh();
+        this.loadChat();
+        this.loadSkills();
+        this.loadNetwork();
+        setInterval(() => this.refresh(), 5000);
+      },
+
+      /* ── Data fetching ── */
+      async refresh() {
+        const [a, r, b, l, h, sb] = await Promise.all([
+          fetch('/api/agents').then(x => x.json()).catch(() => []),
+          fetch('/api/revenue').then(x => x.json()).catch(() => ({ total_usd: 0, by_source: [] })),
+          fetch('/api/messages?limit=30').then(x => x.json()).catch(() => []),
+          fetch('/api/logs?limit=60').then(x => x.json()).catch(() => []),
+          fetch('/api/health').then(x => x.json()).catch(() => ({})),
+          fetch('/api/sandboxes').then(x => x.json()).catch(() => ({ containers: [], browsers: [] })),
+        ]);
+        this.agents = a;
+        this.revenue = r;
+        this.busMessages = b;
+        this.logs = l;
+        this.providers = h.providers || [];
+        this.sandboxes = sb;
+        if (this.selected) this.selected = a.find(x => x.name === this.selected.name) || this.selected;
+      },
+
+      async loadChat() {
+        this.messages = await fetch('/api/chat/history?limit=100').then(x => x.json()).catch(() => []);
+        this.scrollChat();
+      },
+
+      async loadSkills() {
+        this.skills = await fetch('/api/skills').then(x => x.json()).catch(() => []);
+      },
+
+      async loadNetwork() {
+        try {
+          const d = await fetch('/api/network').then(x => x.json());
+          this.networkInfo = {
+            url: d.url || '',
+            local_ip: d.local_ip || '',
+            port: d.port || 4200,
+          };
+        } catch (e) {
+          /* server may not have this endpoint yet — silently ignore */
+          this.networkInfo = {
+            url: window.location.href,
+            local_ip: window.location.hostname,
+            port: parseInt(window.location.port) || 4200,
+          };
+        }
+      },
+
+      /* ── Chat ── */
+      async send() {
+        const text = this.input.trim();
+        if (!text || this.thinking) return;
+        this.input = '';
+        this.thinking = true;
+        this.messages.push({ id: 'tmp' + Date.now(), role: 'user', content: text, kind: 'text' });
+        this.scrollChat();
+        try {
+          await fetch('/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: text, agent: this.chatAgent }),
+          });
+        } finally {
+          this.thinking = false;
+          await this.loadChat();
+          if (text.startsWith('/')) { this.loadSkills(); this.refresh(); }
+        }
+      },
+
+      render(t) {
+        if (!t) return '';
+        let h = t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        h = h.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/`([^`]+)`/g, '<code>$1</code>');
+        return h;
+      },
+
+      scrollChat() {
+        this.$nextTick(() => {
+          const el = this.$refs.chatScroll;
+          if (el) el.scrollTop = el.scrollHeight;
+        });
+      },
+
+      autosize(e) {
+        e.target.style.height = 'auto';
+        e.target.style.height = Math.min(e.target.scrollHeight, 160) + 'px';
+      },
+
+      /* ── Agent helpers ── */
+      agentDotClass(a) {
+        if (!a.enabled) return 'off';
+        if (a.errors > 0 && (a.last_result || '').startsWith('ERROR')) return 'err';
+        const plan = this.agentPlan(a.name);
+        if (plan && a.runs) return 'on planning';
+        return a.runs ? 'on' : '';
+      },
+
+      dotClass(a) { return this.agentDotClass(a); },
+
+      agentPlan(name) {
+        const planLog = this.logs.find(l => l.agent === name && l.action === 'plan');
+        if (!planLog) return '';
+        const detail = planLog.detail || '';
+        return detail.startsWith('No action') ? '' : detail.slice(0, 100);
+      },
+
+      isAgentBrowsing(name) {
+        return (this.sandboxes.browsers || []).includes(name);
+      },
+
+      isAgentSandboxed(name) {
+        const cname = 'autoearn_' + name.toLowerCase().replace(/[^a-z0-9_]/g, '_') + '_sandbox';
+        return (this.sandboxes.containers || []).some(c => c.name === cname);
+      },
+
+      async trigger(n) {
+        await fetch('/api/agents/' + n + '/trigger', { method: 'POST' });
+        setTimeout(() => this.refresh(), 800);
+      },
+
+      /* ── Skills ── */
+      async installSkill() {
+        if (!this.skillSource.trim()) return;
+        this.skillBusy = true;
+        this.skillMsg = 'Installing…';
+        try {
+          const r = await fetch('/api/skills/install', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ source: this.skillSource.trim() }),
+          });
+          const d = await r.json();
+          this.skillMsg = r.ok ? ('Installed ' + d.name) : ('Error: ' + (d.detail || 'failed'));
+          if (r.ok) { this.skillSource = ''; this.loadSkills(); }
+        } catch (e) {
+          this.skillMsg = 'Error: ' + e;
+        } finally {
+          this.skillBusy = false;
+        }
+      },
+
+      async runSkill(n) {
+        const inp = prompt('Input for skill "' + n + '":', '') || '';
+        this.skillOut[n] = 'Running…';
+        const r = await fetch('/api/skills/' + n + '/run', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ input: inp }),
+        });
+        const d = await r.json();
+        this.skillOut[n] = d.output;
+      },
+
+      async removeSkill(n) {
+        if (!confirm('Remove skill "' + n + '"?')) return;
+        await fetch('/api/skills/' + n, { method: 'DELETE' });
+        this.loadSkills();
+      },
+
+      /* ── Sandboxes ── */
+      async sandboxCmd(containerName) {
+        const agentName = containerName.replace(/^autoearn_/, '').replace(/_sandbox$/, '');
+        const cmd = prompt("Shell command to run in " + agentName + "'s sandbox:", 'echo hello');
+        if (!cmd) return;
+        this.sandboxOut[containerName] = 'Running…';
+        await fetch('/api/agents/' + agentName + '/trigger', { method: 'POST' });
+        this.sandboxOut[containerName] = 'Triggered ' + agentName + ' (use chat to run sandbox_exec directly)';
+      },
+
+      async destroySandbox(containerName) {
+        if (!confirm('Destroy sandbox ' + containerName + '? The container will be deleted.')) return;
+        const agentName = containerName.replace(/^autoearn_/, '').replace(/_sandbox$/, '');
+        await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: '/trigger ' + agentName, agent: 'cto' }),
+        });
+        setTimeout(() => this.refresh(), 1500);
+      },
+
+      /* ── Network / URL copy ── */
+      async copyUrl(url) {
+        if (!url) return;
+        try {
+          await navigator.clipboard.writeText(url);
+        } catch (e) {
+          /* fallback for older browsers / HTTP */
+          const ta = document.createElement('textarea');
+          ta.value = url;
+          ta.style.position = 'fixed';
+          ta.style.opacity = '0';
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand('copy');
+          document.body.removeChild(ta);
+        }
+        this.urlCopied = true;
+        setTimeout(() => { this.urlCopied = false; }, 2000);
+      },
+    };
+  }
+</script>
 </body>
 </html>

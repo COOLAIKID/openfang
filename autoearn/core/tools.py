@@ -1175,3 +1175,12 @@ def _pe_pricing_summary(agent: str, **_: Any) -> str:
 @tool("pe_upsert_ltv", "pe_upsert_ltv(segment, avg_ltv, avg_order_value?, churn_rate?, acquisition_cost?) — update LTV estimate for a customer segment.")
 def _pe_upsert_ltv(agent: str, segment: str = "", avg_ltv: float = 0.0, avg_order_value: float = 0.0, churn_rate: float = 0.0, acquisition_cost: float = 0.0, **_: Any) -> str:
     return _pe.upsert_ltv_tool(segment, avg_ltv, avg_order_value, churn_rate, acquisition_cost)
+
+
+# ---------------------------------------------------------------------------
+# Auto-register tools from domain modules via their @tool decorators
+# ---------------------------------------------------------------------------
+from . import email_marketing as _em  # noqa: E402, F401
+from . import course_builder as _cb  # noqa: E402, F401
+from . import webhook_manager as _wh  # noqa: E402, F401
+from . import traffic_analyzer as _ta  # noqa: E402, F401
