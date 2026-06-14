@@ -1,0 +1,7 @@
+{
+  "name": "amazon-listing",
+  "version": "1.0.0",
+  "description": "Write a fully optimized Amazon product listing with a keyword-rich title, five benefit-focused bullet points, and a detailed product description.",
+  "input_description": "Product name, category, key features and dimensions, target customer, primary and secondary keywords, and any compliance or safety certifications.",
+  "output_description": "Complete Amazon listing in Markdown: optimized title (under 200 characters), 5 bullet points (each under 200 characters), backend keyword suggestions, and a 300-word A+ product description."
+}

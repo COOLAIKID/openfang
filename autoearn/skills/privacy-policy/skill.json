@@ -1,0 +1,7 @@
+{
+  "name": "privacy-policy",
+  "version": "1.0.0",
+  "description": "Generate a GDPR-compliant Privacy Policy template for websites, apps, or SaaS products that covers data collection, storage, user rights, and cookie usage.",
+  "input_description": "Company name, website URL, types of data collected (email, payment, analytics, etc.), third-party services used (Google Analytics, Stripe, etc.), and jurisdiction.",
+  "output_description": "Complete Privacy Policy in Markdown covering: data controller identity, data collected, legal basis, data use, third-party sharing, cookies, data retention, user rights (GDPR/CCPA), security measures, and contact details."
+}

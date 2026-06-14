@@ -1,0 +1,7 @@
+{
+  "name": "business-plan-executive-summary",
+  "version": "1.0.0",
+  "description": "Write a concise, investor-ready 1-page executive summary that captures the essence of a business plan and compels further reading.",
+  "input_description": "Business name, industry, problem solved, solution, target market and size, business model, competitive advantage, traction or milestones, team, financial highlights, and funding ask.",
+  "output_description": "One-page executive summary in Markdown (600-800 words) covering: Business Overview, Problem & Solution, Market Opportunity, Business Model, Traction, Team, Financials Snapshot, and The Ask."
+}

@@ -1,0 +1,7 @@
+{
+  "name": "podcast-outline",
+  "version": "1.0.0",
+  "description": "Build a complete podcast episode outline with a scroll-stopping hook, timed segments, discussion questions, and an outro CTA.",
+  "input_description": "Episode topic, target audience, guest name or solo episode, episode length (e.g., 30 min, 60 min), and any key talking points to cover.",
+  "output_description": "Full episode outline with intro hook script, timestamped segment breakdown, talking points per segment, transition notes, and a word-for-word outro CTA."
+}

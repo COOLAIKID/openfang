@@ -1,0 +1,7 @@
+{
+  "name": "influencer-outreach",
+  "version": "1.0.0",
+  "description": "Write a personalized, non-spammy influencer collaboration DM or email that leads with value and clearly states the partnership opportunity.",
+  "input_description": "Your brand name and product, influencer name and niche, collaboration type (gifting, paid post, affiliate, ambassador), compensation offered, and one genuine observation about their content.",
+  "output_description": "A short outreach message (DM version under 150 words, email version under 250 words) with a personalized opener, clear value proposition, specific collaboration ask, and a low-friction next step."
+}

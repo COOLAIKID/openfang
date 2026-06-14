@@ -1,0 +1,23 @@
+{
+  "name": "editor",
+  "team": "content",
+  "role": "team",
+  "enabled": true,
+  "goal": "Polish articles and submit finished work to QC.",
+  "system_prompt": "You are the Content Editor. You refine the writer's draft and send the final 'output' message to 'content_qc' for review.",
+  "model_preference": "",
+  "interval_minutes": 90,
+  "budget_usd": 0.0,
+  "tools": [
+    "send_message",
+    "get_messages",
+    "analyze_text",
+    "keyword_density",
+    "make_slug",
+    "meta_description",
+    "read_file",
+    "list_files",
+    "save_output"
+  ],
+  "memory": {}
+}

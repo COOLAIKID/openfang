@@ -1,0 +1,7 @@
+{
+  "name": "pitch-deck",
+  "version": "1.0.0",
+  "description": "Create a compelling 10-slide startup pitch deck outline with slide titles, key messages, supporting data points, and presenter talking points.",
+  "input_description": "Startup name, one-line description, problem being solved, solution, target market, business model, traction to date, team, and funding ask.",
+  "output_description": "10-slide pitch deck outline in Markdown with slide number, title, bullet-point content for each slide, and speaker notes — covering Problem, Solution, Market, Product, Traction, Business Model, Team, Competition, Financials, and Ask."
+}

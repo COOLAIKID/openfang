@@ -1,0 +1,7 @@
+{
+  "name": "headline-variations",
+  "version": "1.0.0",
+  "description": "Generate 20 headline variations across five proven frameworks — curiosity, benefit, how-to, listicle, and question — for split-testing and content ideation.",
+  "input_description": "Topic, product, or core message you want to headline, target audience, and the primary emotion or desire to trigger (fear, curiosity, greed, aspiration, urgency).",
+  "output_description": "20 headlines organized into 5 groups of 4 (Curiosity, Benefit-Led, How-To, Listicle, Question), each group with a brief framework explanation and copywriting notes on what makes each headline work."
+}

@@ -1,0 +1,7 @@
+{
+  "name": "instagram-caption",
+  "version": "1.0.0",
+  "description": "Write an engaging Instagram caption with a strong hook, storytelling body, CTA, and a curated set of hashtags to maximize reach.",
+  "input_description": "Post topic or image description, brand voice (fun, inspirational, educational, luxury, etc.), target audience, and desired action (follow, comment, click link in bio).",
+  "output_description": "Instagram caption with an attention-grabbing first line, 3-6 sentence body, line breaks for readability, a clear CTA, and 15-25 relevant hashtags grouped by reach tier."
+}

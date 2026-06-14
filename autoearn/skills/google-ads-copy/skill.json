@@ -1,0 +1,7 @@
+{
+  "name": "google-ads-copy",
+  "version": "1.0.0",
+  "description": "Write three complete Google Responsive Search Ad sets with 15 headlines and 4 descriptions each, following Google Ads character limits and best practices.",
+  "input_description": "Product or service, target keyword, target audience, unique selling points, landing page URL (optional), and campaign goal (conversions, traffic, brand awareness).",
+  "output_description": "Three RSA ad sets in Markdown, each with 15 headlines (30 characters max), 4 descriptions (90 characters max), a display URL path suggestion, and a brief pinning strategy note."
+}

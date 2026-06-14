@@ -1,0 +1,7 @@
+{
+  "name": "grant-proposal",
+  "version": "1.0.0",
+  "description": "Write a structured nonprofit grant proposal outline that clearly communicates need, program design, impact metrics, and budget justification.",
+  "input_description": "Organization name and mission, grant funder name, project name, problem statement, proposed program or project, target population, expected outcomes, and budget range.",
+  "output_description": "Complete grant proposal outline in Markdown with Executive Summary, Organization Background, Problem Statement, Program Description, Goals and Objectives, Evaluation Plan, Budget Narrative, and Conclusion."
+}

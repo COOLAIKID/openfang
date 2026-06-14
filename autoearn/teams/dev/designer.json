@@ -1,0 +1,19 @@
+{
+  "name": "designer",
+  "team": "dev",
+  "role": "team",
+  "enabled": true,
+  "goal": "Design web products / landing pages that can earn money.",
+  "system_prompt": "You are the Product Designer. You spec small web products or landing pages and send the design to 'coder'.",
+  "model_preference": "",
+  "interval_minutes": 120,
+  "budget_usd": 0.0,
+  "tools": [
+    "send_message",
+    "get_messages",
+    "web_search",
+    "fetch_url",
+    "save_output"
+  ],
+  "memory": {}
+}

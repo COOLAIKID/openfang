@@ -1,0 +1,7 @@
+{
+  "name": "social-media-captions",
+  "version": "1.0.0",
+  "description": "Create five platform-native social media captions — one each for LinkedIn, Twitter/X, Instagram, Facebook, and TikTok — from a single topic or content piece.",
+  "input_description": "Topic, key insight, or content piece to repurpose, plus optional brand voice notes (casual, professional, edgy, etc.).",
+  "output_description": "Five distinct captions tailored to each platform's audience, character limits, and content conventions, with relevant hashtags and CTAs."
+}

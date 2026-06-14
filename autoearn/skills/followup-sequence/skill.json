@@ -1,0 +1,7 @@
+{
+  "name": "followup-sequence",
+  "version": "1.0.0",
+  "description": "Write a 3-email follow-up sequence for prospects who have gone silent, using different angles to re-engage without being pushy or annoying.",
+  "input_description": "Context of original outreach (what was offered, to whom), time elapsed since last contact, any response or signal received, and desired outcome (call booked, proposal reviewed, etc.).",
+  "output_description": "Three follow-up emails with subject lines, each using a distinct angle: Email 1 (gentle nudge + value add), Email 2 (new angle or social proof), Email 3 (graceful breakup with future door open)."
+}

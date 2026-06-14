@@ -1,0 +1,7 @@
+{
+  "name": "terms-of-service",
+  "version": "1.0.0",
+  "description": "Generate a clear, legally-structured Terms of Service template suitable for SaaS products, digital downloads, or online services.",
+  "input_description": "Company name, product/service type, jurisdiction (country/state), subscription or one-time payment model, and any specific clauses needed (e.g., API usage, reselling restrictions).",
+  "output_description": "Full Terms of Service document in Markdown with all standard sections: Acceptance, Account Terms, Payment, Intellectual Property, Prohibited Uses, Disclaimers, Limitation of Liability, Governing Law, and Contact."
+}

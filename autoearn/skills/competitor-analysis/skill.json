@@ -1,0 +1,7 @@
+{
+  "name": "competitor-analysis",
+  "version": "1.0.0",
+  "description": "Produce a structured SWOT-based competitor analysis from a company name, identifying positioning gaps and strategic opportunities.",
+  "input_description": "Competitor company name, their industry/niche, your own company context (optional), and any specific areas of concern (pricing, product, marketing, etc.).",
+  "output_description": "Full competitor analysis with company overview, SWOT matrix (Strengths, Weaknesses, Opportunities, Threats), positioning map, marketing tactics assessment, and 3-5 actionable strategic recommendations."
+}

@@ -1,0 +1,2280 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>AutoEarn — Your AI Money Machine</title>
+
+  <!-- Installable app (PWA) — works on your phone, opens even with no signal -->
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <meta name="theme-color" content="#0b0d11" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="AutoEarn" />
+  <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png" />
+  <link rel="icon" href="/static/icons/favicon.png" type="image/png" />
+
+  <!-- Alpine served locally (no internet needed to open the app) -->
+  <script src="/static/alpine.min.js" defer></script>
+  <script>
+    // Register the offline helper. Safe to fail (e.g. plain http on LAN).
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("/sw.js").catch(() => {});
+      });
+    }
+    // If the session expires, bounce to the sign-in screen automatically.
+    (function () {
+      const orig = window.fetch;
+      window.fetch = async function (...args) {
+        const res = await orig.apply(this, args);
+        if (res.status === 401 && !location.pathname.startsWith("/login")) {
+          location.href = "/login?next=" + encodeURIComponent(location.pathname);
+        }
+        return res;
+      };
+    })();
+  </script>
+  <style>
+    /* ─── Design tokens ─────────────────────────────────────────────── */
+    :root {
+      --bg:      #0b0d11;
+      --side:    #0f1117;
+      --panel:   #161920;
+      --panel2:  #1c2028;
+      --line:    #252933;
+      --txt:     #e4eaf4;
+      --mut:     #7d8898;
+      --acc:     #10a37f;
+      --acc2:    #1bd39a;
+      --gold:    #f5c842;
+      --warn:    #f87171;
+      --blue:    #60a5fa;
+      --purple:  #a78bfa;
+      --teal:    #2dd4bf;
+      --orange:  #fb923c;
+      --green:   #4ade80;
+      --sidebar-w: 256px;
+      --bnav-h:    62px;
+      --topbar-h:  54px;
+    }
+
+    /* ─── Reset ─────────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body {
+      background: var(--bg);
+      color: var(--txt);
+      font: 14px/1.6 -apple-system, "Segoe UI", Roboto, Helvetica, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    a { color: var(--acc2); }
+    button { touch-action: manipulation; font-family: inherit; }
+    input, select, textarea { font-family: inherit; }
+    [x-cloak] { display: none !important; }
+
+    /* ─── Animations ─────────────────────────────────────────────────── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+    @keyframes pulse-dot {
+      0%,100% { box-shadow: 0 0 0 0 rgba(27,211,154,.5); }
+      50%      { box-shadow: 0 0 0 5px rgba(27,211,154,0); }
+    }
+    @keyframes pulse-warn {
+      0%,100% { box-shadow: 0 0 0 0 rgba(248,113,113,.5); }
+      50%      { box-shadow: 0 0 0 5px rgba(248,113,113,0); }
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    @keyframes shimmer {
+      0%   { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+    @keyframes countUp {
+      from { opacity: 0; transform: scale(.92); }
+      to   { opacity: 1; transform: scale(1); }
+    }
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateY(-8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ─── Layout ─────────────────────────────────────────────────────── */
+    .layout {
+      display: flex;
+      height: 100dvh;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* ─── Sidebar ────────────────────────────────────────────────────── */
+    .side {
+      position: fixed;
+      inset: 0 auto 0 0;
+      width: var(--sidebar-w);
+      background: var(--side);
+      border-right: 1px solid var(--line);
+      display: flex;
+      flex-direction: column;
+      padding: 0;
+      z-index: 200;
+      transform: translateX(-100%);
+      transition: transform .28s cubic-bezier(.4,0,.2,1);
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+    .side.open {
+      transform: translateX(0);
+      box-shadow: 6px 0 40px rgba(0,0,0,.6);
+    }
+    .drawer-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.6);
+      z-index: 190;
+      backdrop-filter: blur(2px);
+    }
+    .drawer-overlay.open { display: block; animation: fadeIn .2s ease; }
+
+    /* Brand */
+    .brand {
+      padding: 18px 16px 14px;
+      display: flex;
+      align-items: center;
+      gap: 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .brand-logo {
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: -.4px;
+      background: linear-gradient(135deg, #fff 30%, var(--acc2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .brand-logo span { color: var(--acc2); -webkit-text-fill-color: var(--acc2); }
+    .brand-tagline {
+      font-size: 10px;
+      color: var(--mut);
+      margin-top: 1px;
+      letter-spacing: .3px;
+    }
+    .brand .close-btn {
+      margin-left: auto;
+      background: none;
+      border: none;
+      color: var(--mut);
+      font-size: 18px;
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: 6px;
+      line-height: 1;
+      min-width: 36px;
+      min-height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .brand .close-btn:hover { background: var(--panel); color: var(--txt); }
+
+    /* Sidebar nav */
+    .side-nav { padding: 10px 8px; }
+    .side-nav button {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      width: 100%;
+      background: none;
+      border: none;
+      color: var(--mut);
+      text-align: left;
+      padding: 11px 12px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 13.5px;
+      font-weight: 500;
+      min-height: 46px;
+      transition: background .15s, color .15s;
+      position: relative;
+    }
+    .side-nav button:hover  { background: var(--panel); color: var(--txt); }
+    .side-nav button.active { background: var(--panel2); color: var(--txt); }
+    .side-nav button.active::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 8px; bottom: 8px;
+      width: 3px;
+      background: var(--acc2);
+      border-radius: 0 3px 3px 0;
+    }
+    .nav-ico { width: 22px; text-align: center; font-size: 17px; }
+    .nav-badge {
+      margin-left: auto;
+      background: var(--acc);
+      color: #fff;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 1px 7px;
+      border-radius: 10px;
+      min-width: 20px;
+      text-align: center;
+    }
+
+    .side-spacer { flex: 1; min-height: 12px; }
+
+    /* Sidebar stats widget */
+    .side-stats {
+      padding: 14px 16px;
+      border-top: 1px solid var(--line);
+    }
+    .revenue-hero {
+      font-size: 28px;
+      font-weight: 800;
+      color: var(--gold);
+      letter-spacing: -.5px;
+      line-height: 1;
+      animation: countUp .4s ease;
+    }
+    .revenue-label {
+      font-size: 11px;
+      color: var(--mut);
+      margin-top: 3px;
+      margin-bottom: 12px;
+    }
+    .stat-row {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 12px;
+      color: var(--mut);
+      margin-bottom: 4px;
+    }
+    .stat-row .dot-s {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--acc2);
+      animation: pulse-dot 2s infinite;
+      flex-shrink: 0;
+    }
+    .stat-row b { color: var(--acc2); }
+
+    /* Phone connect card */
+    .phone-card {
+      margin: 8px 8px 10px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 13px 14px;
+    }
+    .phone-card-title {
+      font-size: 11px;
+      color: var(--mut);
+      margin-bottom: 7px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .phone-url {
+      font-size: 11.5px;
+      color: var(--acc2);
+      word-break: break-all;
+      background: var(--panel2);
+      border-radius: 7px;
+      padding: 7px 10px;
+      margin-bottom: 8px;
+      cursor: pointer;
+      user-select: all;
+      transition: background .15s;
+    }
+    .phone-url:hover { background: #252b38; }
+    .copy-btn {
+      width: 100%;
+      background: var(--panel2);
+      border: 1px solid var(--line);
+      color: var(--txt);
+      border-radius: 8px;
+      padding: 9px;
+      font-size: 12px;
+      cursor: pointer;
+      min-height: 38px;
+      transition: border-color .15s, color .15s;
+    }
+    .copy-btn:hover   { border-color: var(--acc2); color: var(--acc2); }
+    .copy-btn.copied  { border-color: var(--acc2); color: var(--acc2); }
+
+    /* ─── Main content ───────────────────────────────────────────────── */
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      width: 100%;
+      height: 100dvh;
+      overflow: hidden;
+      padding-bottom: var(--bnav-h);
+    }
+
+    /* Topbar */
+    .topbar {
+      height: var(--topbar-h);
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0 16px;
+      flex-shrink: 0;
+      background: var(--side);
+    }
+    .hamburger {
+      background: none;
+      border: none;
+      color: var(--txt);
+      font-size: 20px;
+      cursor: pointer;
+      padding: 6px;
+      border-radius: 8px;
+      min-width: 44px;
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background .15s;
+    }
+    .hamburger:hover { background: var(--panel); }
+    .topbar-title {
+      font-size: 15px;
+      font-weight: 600;
+      flex: 1;
+    }
+    .topbar-rev {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--gold);
+      background: rgba(245,200,66,.08);
+      border: 1px solid rgba(245,200,66,.15);
+      border-radius: 8px;
+      padding: 4px 10px;
+    }
+    .signout-btn {
+      font-size: 12.5px;
+      color: var(--mut);
+      background: none;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 5px 11px;
+      cursor: pointer;
+      transition: color .15s, border-color .15s;
+    }
+    .signout-btn:hover { color: var(--txt); border-color: var(--mut); }
+
+    /* Content pane */
+    .content {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      animation: fadeUp .2s ease;
+    }
+    .pad { padding: 18px 16px; }
+    .pad-lg { padding: 24px 20px; }
+
+    /* ─── Tooltip / help system ──────────────────────────────────────── */
+    .help-wrap {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      position: relative;
+    }
+    .help-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 18px;
+      height: 18px;
+      background: var(--panel2);
+      border: 1px solid var(--line);
+      border-radius: 50%;
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--mut);
+      cursor: pointer;
+      transition: background .15s, border-color .15s, color .15s;
+      flex-shrink: 0;
+      line-height: 1;
+    }
+    .help-btn:hover   { background: var(--panel); border-color: var(--acc2); color: var(--acc2); }
+    .help-btn.open    { background: var(--acc); border-color: var(--acc); color: #fff; }
+    .help-pop {
+      position: absolute;
+      bottom: calc(100% + 10px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: #1e2330;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px 14px;
+      font-size: 12.5px;
+      color: var(--txt);
+      line-height: 1.55;
+      width: 240px;
+      z-index: 999;
+      box-shadow: 0 8px 40px rgba(0,0,0,.6);
+      animation: slideDown .15s ease;
+      pointer-events: none;
+    }
+    .help-pop::after {
+      content: '';
+      position: absolute;
+      top: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      border: 6px solid transparent;
+      border-top-color: var(--line);
+    }
+
+    /* ─── Section labels ─────────────────────────────────────────────── */
+    .section-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      color: var(--mut);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* ─── Worker cards ───────────────────────────────────────────────── */
+    .workers-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 10px;
+    }
+    .worker-card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 14px;
+      cursor: pointer;
+      transition: border-color .18s, transform .18s, box-shadow .18s;
+      position: relative;
+      overflow: hidden;
+    }
+    .worker-card:hover {
+      border-color: var(--acc);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 20px rgba(16,163,127,.12);
+    }
+    .worker-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--acc2), transparent);
+      opacity: 0;
+      transition: opacity .2s;
+    }
+    .worker-card:hover::before { opacity: 1; }
+    .worker-name {
+      font-weight: 700;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .status-dot.on      { background: var(--acc2); animation: pulse-dot 2.5s infinite; }
+    .status-dot.plan    { background: var(--teal); animation: pulse-dot 1.5s infinite; }
+    .status-dot.err     { background: var(--warn); animation: pulse-warn 2s infinite; }
+    .status-dot.off     { background: var(--mut); opacity: .5; }
+    .status-dot.idle    { background: var(--mut); }
+    .worker-team   { font-size: 11px; color: var(--mut); margin-bottom: 8px; }
+    .worker-goal   { font-size: 12px; color: #9dafc4; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .worker-plan   { font-size: 11px; color: var(--teal); margin-top: 6px; font-style: italic; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 10.5px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 20px;
+      margin-top: 8px;
+    }
+    .status-badge.on   { background: rgba(27,211,154,.1); color: var(--acc2); }
+    .status-badge.plan { background: rgba(45,212,191,.1); color: var(--teal); }
+    .status-badge.err  { background: rgba(248,113,113,.1); color: var(--warn); }
+    .status-badge.off  { background: rgba(125,136,152,.1); color: var(--mut); }
+    .status-badge.idle { background: rgba(125,136,152,.07); color: var(--mut); }
+    .worker-pills { display: flex; gap: 4px; margin-top: 6px; flex-wrap: wrap; }
+    .wpill {
+      font-size: 10px;
+      padding: 1px 7px;
+      border-radius: 10px;
+      background: rgba(96,165,250,.1);
+      color: var(--blue);
+    }
+    .wpill.browsing { background: rgba(96,165,250,.1); color: var(--blue); }
+    .wpill.workspace { background: rgba(251,146,60,.1); color: var(--orange); }
+
+    /* Worker group */
+    .worker-group { margin-bottom: 24px; }
+
+    /* ─── Generic card ───────────────────────────────────────────────── */
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 14px;
+    }
+    .card-hd {
+      padding: 12px 16px;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--mut);
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .card-row {
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--line);
+      font-size: 13px;
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+    }
+    .card-row:last-child { border-bottom: none; }
+
+    /* ─── Activity feed ──────────────────────────────────────────────── */
+    .feed-item {
+      padding: 11px 16px;
+      border-bottom: 1px solid var(--line);
+      font-size: 13px;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      transition: background .15s;
+    }
+    .feed-item:hover { background: var(--panel2); }
+    .feed-item:last-child { border-bottom: none; }
+    .feed-ico { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+    .feed-body { flex: 1; min-width: 0; }
+    .feed-who  { font-weight: 600; color: var(--txt); }
+    .feed-what { color: var(--mut); font-size: 12px; margin-top: 2px; }
+    .feed-item.plan-entry .feed-what { color: var(--teal); }
+    .feed-item.earn-entry .feed-ico   { color: var(--gold); }
+    .feed-item.error-entry .feed-ico  { color: var(--warn); }
+    .feed-time { font-size: 10.5px; color: var(--mut); flex-shrink: 0; margin-top: 2px; }
+
+    /* ── Live activity timeline ───────────────────────────────────────── */
+    .live-pill {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 10.5px; font-weight: 700; letter-spacing: .04em;
+      color: var(--acc2); background: rgba(27,211,154,.10);
+      border: 1px solid rgba(27,211,154,.22); border-radius: 999px;
+      padding: 3px 9px; text-transform: uppercase;
+    }
+    .live-pill-dot {
+      width: 7px; height: 7px; border-radius: 50%; background: var(--acc2);
+      animation: pulse-dot 1.4s infinite;
+    }
+    .live-count {
+      margin-left: auto; font-size: 11px; font-weight: 600; color: var(--acc2);
+      text-transform: none; letter-spacing: 0;
+    }
+    .timeline { padding: 6px 0; }
+    .tl-item {
+      display: flex; gap: 12px; padding: 11px 16px;
+      animation: fadeUp .35s ease both;
+    }
+    .tl-rail { display: flex; flex-direction: column; align-items: center; flex-shrink: 0; }
+    .tl-dot {
+      width: 24px; height: 24px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 800; flex-shrink: 0;
+      border: 1.5px solid var(--line); background: var(--panel2); color: var(--mut);
+      transition: all .3s ease;
+    }
+    .tl-dot.running { border-color: var(--acc); background: rgba(16,163,127,.12); }
+    .tl-dot.done    { border-color: var(--acc2); background: rgba(27,211,154,.16); color: var(--acc2); }
+    .tl-dot.error   { border-color: var(--warn); background: rgba(248,113,113,.14); color: var(--warn); }
+    .tl-spin {
+      width: 12px; height: 12px; border-radius: 50%;
+      border: 2px solid rgba(27,211,154,.25); border-top-color: var(--acc2);
+      animation: spin .8s linear infinite;
+    }
+    .tl-body { flex: 1; min-width: 0; }
+    .tl-top { display: flex; align-items: baseline; gap: 8px; }
+    .tl-who { font-weight: 600; font-size: 13px; color: var(--txt); }
+    .tl-time { font-size: 10.5px; color: var(--mut); margin-left: auto; flex-shrink: 0; }
+    .tl-title { font-size: 13.5px; color: var(--txt); margin-top: 1px; }
+    .tl-item.running .tl-title { color: var(--acc2); }
+    .tl-item.error   .tl-title { color: var(--warn); }
+    .tl-detail { font-size: 11.5px; color: var(--mut); margin-top: 3px; font-style: italic; }
+    .tl-result { font-size: 11.5px; color: var(--warn); margin-top: 3px; word-break: break-word; }
+
+    /* Message thread */
+    .msg-item {
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--line);
+      font-size: 12.5px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .msg-item:last-child { border-bottom: none; }
+    .msg-from { color: var(--acc2); font-weight: 600; }
+    .msg-to   { color: var(--gold); font-weight: 600; }
+    .msg-arr  { color: var(--mut); }
+    .msg-type {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 10px;
+      background: var(--panel2);
+    }
+    .msg-type.directive  { color: var(--gold); }
+    .msg-type.approval   { color: var(--acc2); }
+    .msg-type.rejection  { color: var(--warn); }
+    .msg-type.output     { color: var(--blue); }
+    .msg-type.review     { color: var(--teal); }
+    .msg-subject { color: var(--mut); font-size: 11.5px; width: 100%; margin-top: 1px; }
+
+    /* ─── Revenue hero ───────────────────────────────────────────────── */
+    .rev-hero {
+      background: linear-gradient(135deg, #0f1a14 0%, #111820 100%);
+      border: 1px solid rgba(27,211,154,.15);
+      border-radius: 16px;
+      padding: 24px 22px;
+      margin-bottom: 16px;
+      position: relative;
+      overflow: hidden;
+    }
+    .rev-hero::before {
+      content: '';
+      position: absolute;
+      top: -40px; right: -40px;
+      width: 180px; height: 180px;
+      background: radial-gradient(circle, rgba(27,211,154,.07) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .rev-amount {
+      font-size: 48px;
+      font-weight: 900;
+      color: var(--gold);
+      letter-spacing: -2px;
+      line-height: 1;
+      animation: countUp .5s ease;
+    }
+    .rev-sublabel { font-size: 13px; color: var(--mut); margin-top: 6px; }
+    .rev-sources  { margin-top: 16px; display: flex; flex-direction: column; gap: 6px; }
+    .rev-source {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 13px;
+    }
+    .rev-source-name { color: var(--mut); }
+    .rev-source-amt  { color: var(--gold); font-weight: 600; }
+
+    /* ─── Workspaces ─────────────────────────────────────────────────── */
+    .ws-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .ws-card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 16px;
+      position: relative;
+      transition: border-color .18s;
+    }
+    .ws-card:hover { border-color: var(--acc); }
+    .ws-card-name  { font-weight: 700; font-size: 14px; margin-bottom: 3px; }
+    .ws-card-id    { font-size: 10px; color: var(--mut); font-family: monospace; margin-bottom: 8px; }
+    .ws-card-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11.5px;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 20px;
+    }
+    .ws-card-status.running { background: rgba(27,211,154,.1); color: var(--acc2); }
+    .ws-card-status.stopped { background: rgba(248,113,113,.1); color: var(--warn); }
+    .ws-card-status.thread  { background: rgba(125,136,152,.1); color: var(--mut); }
+    .ws-running-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; animation: pulse-dot 2s infinite; }
+    .ws-actions { margin-top: 12px; display: flex; gap: 6px; flex-wrap: wrap; }
+
+    /* Log viewer */
+    .log-panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      margin-top: 16px;
+      overflow: hidden;
+    }
+    .log-panel-hd {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .log-pre {
+      background: #080a0e;
+      padding: 14px 16px;
+      font-size: 11.5px;
+      line-height: 1.65;
+      max-height: 380px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      color: #9dafc4;
+    }
+
+    /* Mode banner */
+    .mode-banner {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 14px 18px;
+      margin-bottom: 18px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .mode-icon { font-size: 26px; flex-shrink: 0; }
+    .mode-title { font-weight: 700; font-size: 14px; margin-bottom: 3px; }
+    .mode-desc  { font-size: 12px; color: var(--mut); line-height: 1.5; }
+
+    /* ─── Capabilities (skills) ──────────────────────────────────────── */
+    .skill-card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 10px;
+      transition: border-color .15s;
+    }
+    .skill-card:hover { border-color: var(--acc); }
+    .skill-name { font-weight: 700; font-size: 15px; margin-bottom: 4px; }
+    .skill-desc { color: var(--mut); font-size: 13px; margin-bottom: 10px; }
+    .skill-files { font-size: 11px; color: var(--mut); margin-bottom: 12px; }
+    .skill-out  { margin-top: 10px; }
+
+    .install-bar {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 18px;
+      flex-wrap: wrap;
+    }
+    .install-input {
+      flex: 1;
+      min-width: 0;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      color: var(--txt);
+      padding: 11px 14px;
+      font-size: 13.5px;
+      outline: none;
+      min-height: 46px;
+      transition: border-color .15s;
+    }
+    .install-input:focus { border-color: var(--acc); }
+    .install-input::placeholder { color: var(--mut); }
+
+    /* ─── Chat ───────────────────────────────────────────────────────── */
+    .chat-wrap {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px 16px 140px;
+    }
+    .chat-empty {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--mut);
+    }
+    .chat-empty-ico { font-size: 48px; margin-bottom: 14px; }
+    .chat-empty h3  { font-size: 18px; color: var(--txt); margin-bottom: 8px; }
+    .chat-empty p   { font-size: 14px; line-height: 1.6; max-width: 400px; margin: 0 auto 20px; }
+    .quick-chips { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+    .chip {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 7px 14px;
+      font-size: 13px;
+      cursor: pointer;
+      color: var(--txt);
+      transition: border-color .15s, background .15s;
+    }
+    .chip:hover { border-color: var(--acc); background: var(--panel2); }
+
+    .bubble { display: flex; gap: 10px; margin: 14px 0; animation: fadeUp .2s ease; }
+    .bav {
+      width: 32px; height: 32px;
+      border-radius: 8px;
+      flex: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: -.3px;
+    }
+    .bubble.user .bav      { background: #2a3342; color: var(--txt); }
+    .bubble.assistant .bav { background: var(--acc); color: #fff; }
+    .b-body { flex: 1; min-width: 0; }
+    .b-name { font-size: 12px; color: var(--mut); margin-bottom: 3px; }
+    .b-text { white-space: pre-wrap; word-wrap: break-word; line-height: 1.6; }
+    .b-text code { background: #0a0c10; padding: 1px 5px; border-radius: 4px; font-size: 12px; }
+    .b-text b    { color: #fff; }
+    .bubble.error .b-text  { color: var(--warn); }
+    .bubble.command .b-text {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px 13px;
+      font-size: 13px;
+    }
+    .thinking-dots span {
+      animation: pulse-dot 1.2s infinite;
+      display: inline-block;
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--mut);
+      margin: 0 2px;
+    }
+    .thinking-dots span:nth-child(2) { animation-delay: .2s; }
+    .thinking-dots span:nth-child(3) { animation-delay: .4s; }
+
+    /* Composer */
+    .composer {
+      position: fixed;
+      bottom: var(--bnav-h);
+      left: 0; right: 0;
+      background: linear-gradient(transparent, var(--bg) 30%);
+      padding: 12px 16px 16px;
+      z-index: 100;
+    }
+    .composer-inner {
+      max-width: 800px;
+      margin: 0 auto;
+      display: flex;
+      gap: 8px;
+      align-items: flex-end;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 8px 8px 8px 12px;
+      transition: border-color .15s;
+    }
+    .composer-inner:focus-within { border-color: var(--acc); }
+    .agent-select {
+      background: var(--panel2);
+      color: var(--txt);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 8px 6px;
+      font-size: 12px;
+      max-width: 110px;
+      min-height: 38px;
+      outline: none;
+    }
+    .composer-ta {
+      flex: 1;
+      background: none;
+      border: none;
+      color: var(--txt);
+      resize: none;
+      font: 14px/1.5 inherit;
+      max-height: 140px;
+      outline: none;
+      padding: 8px 0;
+    }
+    .composer-ta::placeholder { color: var(--mut); }
+    .send-btn {
+      background: var(--acc);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      width: 44px; height: 44px;
+      font-size: 18px;
+      cursor: pointer;
+      flex: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background .15s, transform .1s;
+    }
+    .send-btn:hover:not(:disabled) { background: #0d8f6f; }
+    .send-btn:active:not(:disabled) { transform: scale(.95); }
+    .send-btn:disabled { opacity: .35; cursor: default; }
+    .composer-hint {
+      max-width: 800px;
+      margin: 6px auto 0;
+      font-size: 11.5px;
+      color: var(--mut);
+      text-align: center;
+    }
+
+    /* ─── Buttons ────────────────────────────────────────────────────── */
+    .btn {
+      background: var(--panel2);
+      color: var(--txt);
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      padding: 10px 16px;
+      font-size: 13px;
+      cursor: pointer;
+      min-height: 42px;
+      transition: border-color .15s, color .15s, background .15s, transform .1s;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      font-weight: 500;
+    }
+    .btn:hover   { border-color: var(--acc); color: var(--acc2); }
+    .btn:active  { transform: scale(.97); }
+    .btn.primary { background: var(--acc); color: #fff; border-color: var(--acc); }
+    .btn.primary:hover { background: #0d8f6f; border-color: #0d8f6f; color: #fff; }
+    .btn.danger:hover  { border-color: var(--warn); color: var(--warn); }
+    .btn.sm  { padding: 6px 11px; font-size: 12px; min-height: 34px; border-radius: 7px; }
+    .btn-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+
+    /* ─── Empty states ───────────────────────────────────────────────── */
+    .empty-state {
+      text-align: center;
+      padding: 48px 24px;
+      color: var(--mut);
+    }
+    .empty-state .es-ico { font-size: 40px; margin-bottom: 12px; }
+    .empty-state h4  { font-size: 15px; color: var(--txt); margin-bottom: 6px; }
+    .empty-state p   { font-size: 13px; line-height: 1.6; max-width: 360px; margin: 0 auto; }
+
+    /* ─── pre / code ─────────────────────────────────────────────────── */
+    pre {
+      background: #080a0e;
+      padding: 12px 14px;
+      border-radius: 8px;
+      font-size: 12px;
+      overflow: auto;
+      color: #9dafc4;
+      white-space: pre-wrap;
+      line-height: 1.6;
+    }
+
+    /* ─── Welcome overlay ────────────────────────────────────────────── */
+    .welcome-bg {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.85);
+      backdrop-filter: blur(6px);
+      z-index: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .welcome-box {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 36px 32px;
+      max-width: 460px;
+      width: 100%;
+      box-shadow: 0 24px 80px rgba(0,0,0,.6);
+      animation: fadeUp .3s ease;
+    }
+    .welcome-box h2 { font-size: 22px; margin-bottom: 10px; }
+    .welcome-box p  { color: var(--mut); font-size: 14px; line-height: 1.65; margin-bottom: 22px; }
+    .setup-steps { counter-reset: step; margin-bottom: 24px; }
+    .setup-step {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .setup-step:last-child { border-bottom: none; }
+    .step-num {
+      width: 26px; height: 26px;
+      background: var(--acc);
+      border-radius: 50%;
+      font-size: 12px;
+      font-weight: 800;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+    .step-body b { display: block; font-size: 13px; margin-bottom: 3px; }
+    .step-body p { font-size: 12px; color: var(--mut); margin: 0; }
+
+    /* ─── Agent detail modal ─────────────────────────────────────────── */
+    .modal-bg {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.65);
+      backdrop-filter: blur(3px);
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      z-index: 500;
+      animation: fadeIn .18s ease;
+    }
+    .modal {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 20px 20px 0 0;
+      width: 100%;
+      max-height: 92dvh;
+      overflow: auto;
+      animation: slideDown .22s ease;
+    }
+    .modal-hd {
+      position: sticky;
+      top: 0;
+      background: var(--panel);
+      padding: 18px 20px 14px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .modal-hd h3 { font-size: 16px; flex: 1; }
+    .modal-body  { padding: 18px 20px; }
+    .kv-grid {
+      display: grid;
+      grid-template-columns: 130px 1fr;
+      gap: 8px 12px;
+      font-size: 13px;
+      margin-bottom: 16px;
+    }
+    .kv-label { color: var(--mut); font-weight: 500; display: flex; align-items: center; gap: 5px; }
+    .kv-val   { color: var(--txt); }
+    .tool-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+    .tool-tag  {
+      font-size: 10.5px;
+      background: var(--panel2);
+      border: 1px solid var(--line);
+      border-radius: 5px;
+      padding: 2px 7px;
+      color: var(--mut);
+    }
+    .tool-tag.browser  { color: var(--blue); border-color: rgba(96,165,250,.3); }
+    .tool-tag.sandbox  { color: var(--orange); border-color: rgba(251,146,60,.3); }
+    .tool-tag.computer { color: var(--teal); border-color: rgba(45,212,191,.3); }
+    .tool-tag.self     { color: var(--purple); border-color: rgba(167,139,250,.3); }
+
+    /* ─── Phone modal ────────────────────────────────────────────────── */
+    .phone-modal-bg {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.7);
+      backdrop-filter: blur(4px);
+      z-index: 550;
+      display: flex;
+      align-items: flex-end;
+      animation: fadeIn .18s ease;
+    }
+    .phone-modal {
+      width: 100%;
+      background: var(--panel);
+      border-top: 1px solid var(--line);
+      border-radius: 20px 20px 0 0;
+      padding: 24px 20px calc(24px + env(safe-area-inset-bottom));
+      animation: slideDown .22s ease;
+    }
+    .phone-modal h3  { font-size: 18px; margin-bottom: 14px; }
+    .pm-url {
+      font-size: 14px;
+      color: var(--acc2);
+      word-break: break-all;
+      background: var(--panel2);
+      border-radius: 10px;
+      padding: 12px 14px;
+      margin-bottom: 12px;
+      cursor: pointer;
+      user-select: all;
+    }
+    .pm-meta  { font-size: 12.5px; color: var(--mut); margin-bottom: 18px; line-height: 1.6; }
+    .pm-copy  { width: 100%; background: var(--acc); color: #fff; border: none; border-radius: 12px; padding: 15px; font-size: 15px; cursor: pointer; min-height: 52px; margin-bottom: 10px; font-weight: 600; transition: background .15s; }
+    .pm-copy:hover  { background: #0d8f6f; }
+    .pm-close { width: 100%; background: var(--panel2); color: var(--txt); border: 1px solid var(--line); border-radius: 12px; padding: 13px; font-size: 14px; cursor: pointer; min-height: 48px; }
+
+    /* ─── Bottom nav (mobile) ────────────────────────────────────────── */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      height: var(--bnav-h);
+      background: var(--side);
+      border-top: 1px solid var(--line);
+      display: flex;
+      align-items: stretch;
+      z-index: 150;
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+    .bottom-nav button {
+      flex: 1;
+      background: none;
+      border: none;
+      color: var(--mut);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      font-size: 10px;
+      cursor: pointer;
+      padding: 6px 2px;
+      min-height: 44px;
+      transition: color .15s;
+    }
+    .bottom-nav button.active { color: var(--acc2); }
+    .bottom-nav .bn-ico { font-size: 20px; line-height: 1; }
+
+    /* Phone FAB */
+    .phone-fab {
+      position: fixed;
+      right: 16px;
+      bottom: calc(var(--bnav-h) + 14px);
+      width: 46px; height: 46px;
+      border-radius: 50%;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      color: var(--txt);
+      font-size: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 140;
+      box-shadow: 0 4px 20px rgba(0,0,0,.4);
+      transition: border-color .15s, transform .15s;
+    }
+    .phone-fab:hover { border-color: var(--acc2); transform: scale(1.05); }
+
+    /* ─── Desktop ≥768 ───────────────────────────────────────────────── */
+    @media (min-width: 768px) {
+      .side {
+        position: relative;
+        transform: none !important;
+        box-shadow: none !important;
+        flex-shrink: 0;
+      }
+      .drawer-overlay  { display: none !important; }
+      .brand .close-btn { display: none; }
+      .main {
+        padding-bottom: 0;
+        width: calc(100% - var(--sidebar-w));
+      }
+      .hamburger   { display: none; }
+      .composer    { bottom: 0; }
+      .bottom-nav  { display: none; }
+      .phone-fab   { display: none; }
+      .modal-bg    { align-items: center; }
+      .modal {
+        border-radius: 16px;
+        width: min(640px, 94vw);
+        max-height: 90dvh;
+      }
+      .phone-modal-bg { align-items: center; }
+      .phone-modal {
+        border-radius: 16px;
+        max-width: 420px;
+        padding: 28px;
+      }
+      .welcome-bg { backdrop-filter: blur(8px); }
+      .ws-grid    { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+    }
+    @media (min-width: 1024px) {
+      .workers-grid { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
+    }
+  </style>
+</head>
+<body>
+<div class="layout" x-data="app()" x-init="init()" x-cloak>
+
+  <!-- ── Welcome overlay (first-run / no AI connected) ── -->
+  <template x-if="showWelcome">
+    <div class="welcome-bg" @click.self="showWelcome=false">
+      <div class="welcome-box">
+        <h2>👋 Welcome to AutoEarn</h2>
+        <p>Your 21-person AI team is ready to start making money — they just need a free AI account to think with. Set one up and they'll run 24/7 on their own.</p>
+        <div class="setup-steps">
+          <div class="setup-step">
+            <div class="step-num">1</div>
+            <div class="step-body">
+              <b>Get a free AI account</b>
+              <p>Sign up at <b>console.groq.com</b> — it's free and takes 30 seconds. Grab your API Key from the dashboard there.</p>
+            </div>
+          </div>
+          <div class="setup-step">
+            <div class="step-num">2</div>
+            <div class="step-body">
+              <b>Add it to config.toml</b>
+              <p>Open <code>autoearn/config.toml</code> and paste your key next to <code>groq_api_key</code>.</p>
+            </div>
+          </div>
+          <div class="setup-step">
+            <div class="step-num">3</div>
+            <div class="step-body">
+              <b>Restart AutoEarn</b>
+              <p>Run <code>python main.py</code> again — your team wakes up and starts working immediately.</p>
+            </div>
+          </div>
+        </div>
+        <button class="btn primary" style="width:100%;font-size:15px;min-height:50px;" @click="showWelcome=false">Got it — let me look around</button>
+      </div>
+    </div>
+  </template>
+
+  <!-- Drawer overlay (mobile) -->
+  <div class="drawer-overlay" :class="drawerOpen&&'open'" @click="drawerOpen=false"></div>
+
+  <!-- ── Sidebar ── -->
+  <aside class="side" :class="drawerOpen&&'open'">
+    <div class="brand">
+      <div>
+        <div class="brand-logo">Auto<span>Earn</span></div>
+        <div class="brand-tagline">Your AI money machine</div>
+      </div>
+      <button class="close-btn" @click="drawerOpen=false" aria-label="Close">✕</button>
+    </div>
+
+    <nav class="side-nav">
+      <button :class="tab==='chat'&&'active'" @click="tab='chat';drawerOpen=false">
+        <span class="nav-ico">💬</span> Chat with your team
+      </button>
+      <button :class="tab==='team'&&'active'" @click="tab='team';drawerOpen=false">
+        <span class="nav-ico">👥</span> Your AI Team
+        <span class="nav-badge" x-show="activeWorkers>0" x-text="activeWorkers+' active'"></span>
+      </button>
+      <button :class="tab==='earnings'&&'active'" @click="tab='earnings';drawerOpen=false">
+        <span class="nav-ico">💰</span> Earnings &amp; Activity
+      </button>
+      <button :class="tab==='capabilities'&&'active'" @click="tab='capabilities';drawerOpen=false">
+        <span class="nav-ico">💡</span> Capabilities
+      </button>
+      <button :class="tab==='workspaces'&&'active'" @click="tab='workspaces';drawerOpen=false">
+        <span class="nav-ico">🖥️</span> Private Workspaces
+      </button>
+    </nav>
+
+    <div class="side-spacer"></div>
+
+    <!-- Stats widget -->
+    <div class="side-stats">
+      <div class="revenue-hero" x-text="'$'+(revenue.total_usd||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})"></div>
+      <div class="revenue-label">total earned by your AI team</div>
+      <div class="stat-row" x-show="activeWorkers>0">
+        <span class="dot-s"></span>
+        <b x-text="activeWorkers"></b> workers active right now
+      </div>
+      <div class="stat-row" x-show="activeWorkers===0&&agents.length>0">
+        <span style="width:7px;height:7px;border-radius:50%;background:var(--mut);flex-shrink:0;"></span>
+        <span>Workers starting up…</span>
+      </div>
+      <div class="stat-row" x-show="providers.length>0">
+        <span style="font-size:12px;">🧠</span>
+        <span>AI: <b x-text="providers.join(', ')"></b></span>
+      </div>
+      <div class="stat-row" x-show="providers.length===0" style="cursor:pointer" @click="showWelcome=true">
+        <span style="font-size:12px;">⚠️</span>
+        <span style="color:var(--gold)">No AI connected — tap to set up</span>
+      </div>
+    </div>
+
+    <!-- Phone connect card -->
+    <div class="phone-card" x-show="networkInfo.url">
+      <div class="phone-card-title">📱 Open on your phone</div>
+      <div class="phone-url" x-text="networkInfo.url" @click="copyUrl(networkInfo.url)"></div>
+      <button class="copy-btn" :class="urlCopied&&'copied'" @click="copyUrl(networkInfo.url)" x-text="urlCopied?'✓ Copied to clipboard!':'Copy link'"></button>
+    </div>
+    <div class="phone-card" x-show="!networkInfo.url">
+      <div class="phone-card-title">📱 Open on your phone</div>
+      <div style="font-size:12px;color:var(--mut)">Finding your network address…</div>
+    </div>
+  </aside>
+
+  <!-- ── Main area ── -->
+  <div class="main" style="position:relative;">
+
+    <!-- Topbar -->
+    <div class="topbar">
+      <button class="hamburger" @click="drawerOpen=!drawerOpen" aria-label="Menu">☰</button>
+      <div class="topbar-title" x-text="{chat:'Chat with your AI team',team:'Your AI Team',earnings:'Earnings &amp; Activity',capabilities:'Capabilities',workspaces:'Private Workspaces'}[tab]"></div>
+      <div class="topbar-rev" x-show="tab!=='earnings'" x-text="'$'+(revenue.total_usd||0).toFixed(2)"></div>
+      <button class="signout-btn" x-show="authEnabled" @click="signOut()" title="Sign out">Sign out</button>
+    </div>
+
+    <!-- ════ CHAT ════ -->
+    <div class="content" x-show="tab==='chat'" x-ref="chatScroll">
+      <div class="chat-wrap">
+        <template x-if="!messages.length">
+          <div class="chat-empty">
+            <div class="chat-empty-ico">💬</div>
+            <h3>Talk to your AI team</h3>
+            <p>Ask them anything, give new direction, or check on what they're working on. They're listening 24/7.</p>
+            <div class="quick-chips">
+              <button class="chip" @click="input='What are you all working on right now?';send()">What are you working on?</button>
+              <button class="chip" @click="input='How much money have we made so far?';send()">Earnings so far?</button>
+              <button class="chip" @click="input='Find a new way to make money online and start working on it';send()">Find new revenue</button>
+              <button class="chip" @click="input='/help';send()">Show all commands</button>
+            </div>
+          </div>
+        </template>
+        <template x-for="m in messages" :key="m.id">
+          <div class="bubble" :class="[m.role, m.kind]">
+            <div class="bav" x-text="m.role==='user'?'You':(m.agent?m.agent.slice(0,2).toUpperCase():'AE')"></div>
+            <div class="b-body">
+              <div class="b-name" x-text="m.role==='user'?'You':(workerLabel(m.agent)||'AutoEarn')"></div>
+              <div class="b-text" x-html="render(m.content)"></div>
+            </div>
+          </div>
+        </template>
+        <template x-if="thinking">
+          <div class="bubble assistant">
+            <div class="bav">AE</div>
+            <div class="b-body">
+              <div class="b-name" x-text="workerLabel(chatAgent)"></div>
+              <div class="thinking-dots"><span></span><span></span><span></span></div>
+            </div>
+          </div>
+        </template>
+      </div>
+    </div>
+
+    <!-- Composer -->
+    <div class="composer" x-show="tab==='chat'">
+      <div class="composer-inner">
+        <select class="agent-select" x-model="chatAgent">
+          <template x-for="a in agents" :key="a.name">
+            <option :value="a.name" x-text="workerLabel(a.name)"></option>
+          </template>
+        </select>
+        <textarea
+          class="composer-ta"
+          x-model="input"
+          rows="1"
+          placeholder="Message your team, or type / for commands…"
+          @keydown.enter.prevent="if(!$event.shiftKey)send()"
+          @input="autosize($event)">
+        </textarea>
+        <button class="send-btn" @click="send()" :disabled="thinking||!input.trim()">➤</button>
+      </div>
+      <div class="composer-hint">Enter to send · Shift+Enter for new line</div>
+    </div>
+
+    <!-- ════ YOUR AI TEAM ════ -->
+    <div class="content" x-show="tab==='team'">
+      <div class="pad">
+
+        <!-- Leadership -->
+        <div class="worker-group">
+          <div class="section-label">🎯 Leadership — sets direction &amp; strategy</div>
+          <div class="workers-grid">
+            <template x-for="a in agents.filter(x=>x.role==='council')" :key="a.name">
+              <div class="worker-card" @click="selected=a">
+                <div class="worker-name">
+                  <span class="status-dot" :class="workerDotClass(a)"></span>
+                  <span x-text="workerLabel(a.name)"></span>
+                  <span class="wpill browsing" x-show="isAgentBrowsing(a.name)">🌐</span>
+                  <span class="wpill workspace" x-show="isAgentSandboxed(a.name)">⚡</span>
+                </div>
+                <div class="worker-team" x-text="workerTeamLabel(a)"></div>
+                <div class="worker-goal" x-text="a.goal"></div>
+                <div class="worker-plan" x-show="agentPlan(a.name)" x-text="'Planning: '+agentPlan(a.name)"></div>
+                <div class="status-badge" :class="workerDotClass(a)" x-text="workerStatusLabel(a)"></div>
+              </div>
+            </template>
+          </div>
+        </div>
+
+        <!-- Teams -->
+        <template x-for="teamName in ['content','dev','market','outreach']" :key="teamName">
+          <div class="worker-group" x-show="agents.filter(x=>x.role==='team'&&x.team===teamName).length>0">
+            <div class="section-label" x-text="teamSectionLabel(teamName)"></div>
+            <div class="workers-grid">
+              <template x-for="a in agents.filter(x=>x.role==='team'&&x.team===teamName)" :key="a.name">
+                <div class="worker-card" @click="selected=a">
+                  <div class="worker-name">
+                    <span class="status-dot" :class="workerDotClass(a)"></span>
+                    <span x-text="workerLabel(a.name)"></span>
+                    <span class="wpill browsing" x-show="isAgentBrowsing(a.name)">🌐</span>
+                    <span class="wpill workspace" x-show="isAgentSandboxed(a.name)">⚡</span>
+                  </div>
+                  <div class="worker-team" x-text="workerTeamLabel(a)"></div>
+                  <div class="worker-goal" x-text="a.goal"></div>
+                  <div class="worker-plan" x-show="agentPlan(a.name)" x-text="'Planning: '+agentPlan(a.name)"></div>
+                  <div class="status-badge" :class="workerDotClass(a)" x-text="workerStatusLabel(a)"></div>
+                </div>
+              </template>
+            </div>
+          </div>
+        </template>
+
+        <!-- Quality team -->
+        <div class="worker-group" x-show="agents.filter(x=>x.role==='qc').length>0">
+          <div class="section-label">✅ Quality Team — reviews everything before it goes out</div>
+          <div class="workers-grid">
+            <template x-for="a in agents.filter(x=>x.role==='qc')" :key="a.name">
+              <div class="worker-card" @click="selected=a">
+                <div class="worker-name">
+                  <span class="status-dot" :class="workerDotClass(a)"></span>
+                  <span x-text="workerLabel(a.name)"></span>
+                </div>
+                <div class="worker-team" x-text="workerTeamLabel(a)"></div>
+                <div class="worker-goal" x-text="a.goal"></div>
+                <div class="worker-plan" x-show="agentPlan(a.name)" x-text="'Planning: '+agentPlan(a.name)"></div>
+                <div class="status-badge" :class="workerDotClass(a)" x-text="workerStatusLabel(a)"></div>
+              </div>
+            </template>
+          </div>
+        </div>
+
+        <div class="empty-state" x-show="!agents.length">
+          <div class="es-ico">👥</div>
+          <h4>Your team is loading…</h4>
+          <p>Your 21 AI workers are starting up. This takes a few seconds.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════ EARNINGS & ACTIVITY ════ -->
+    <div class="content" x-show="tab==='earnings'">
+      <div class="pad">
+
+        <!-- Revenue hero -->
+        <div class="rev-hero">
+          <div class="rev-amount" x-text="'$'+(revenue.total_usd||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})"></div>
+          <div class="rev-sublabel">Total earned by your AI team</div>
+          <div class="rev-sources" x-show="revenue.by_source&&revenue.by_source.length">
+            <template x-for="s in (revenue.by_source||[])" :key="s.source">
+              <div class="rev-source">
+                <span class="rev-source-name" x-text="s.source||'(unattributed)'"></span>
+                <span class="rev-source-amt" x-text="'$'+s.amount.toFixed(2)"></span>
+              </div>
+            </template>
+          </div>
+          <div x-show="!revenue.by_source||!revenue.by_source.length" style="margin-top:12px;font-size:13px;color:var(--mut)">
+            Your team is working on their first earnings. Check back soon.
+          </div>
+        </div>
+
+        <!-- Live activity — real-time "doing… → done" timeline -->
+        <div class="card">
+          <div class="card-hd">
+            <span class="live-pill"><span class="live-pill-dot"></span>Live</span>
+            What your team is doing
+            <span x-show="workingNow>0" class="live-count" x-text="workingNow+' working now'"></span>
+          </div>
+          <div class="timeline">
+            <template x-for="t in tasks" :key="t.id">
+              <div class="tl-item" :class="t.status">
+                <div class="tl-rail">
+                  <span class="tl-dot" :class="t.status">
+                    <span x-show="t.status==='running'" class="tl-spin"></span>
+                    <span x-show="t.status==='done'">✓</span>
+                    <span x-show="t.status==='error'">!</span>
+                  </span>
+                </div>
+                <div class="tl-body">
+                  <div class="tl-top">
+                    <span class="tl-who" x-text="workerLabel(t.agent)"></span>
+                    <span class="tl-time" x-text="taskTime(t)"></span>
+                  </div>
+                  <div class="tl-title" x-text="t.title"></div>
+                  <div class="tl-detail" x-show="t.detail" x-text="t.detail"></div>
+                  <div class="tl-result" x-show="t.status==='error'&&t.result" x-text="t.result"></div>
+                </div>
+              </div>
+            </template>
+          </div>
+          <div class="empty-state" style="padding:28px" x-show="!tasks.length">
+            <div class="es-ico" style="font-size:28px">💤</div>
+            <p>Nothing yet — the moment your team starts working, every step shows up here in real time.</p>
+          </div>
+        </div>
+
+        <!-- Team messages -->
+        <div class="card">
+          <div class="card-hd">
+            📩 Team messages
+            <div class="help-wrap" style="margin-left:auto" x-data="{open:false}">
+              <button class="help-btn" :class="open&&'open'" @click.stop="open=!open">?</button>
+              <div class="help-pop" x-show="open">Messages your AI workers send each other to coordinate work — like a team Slack. Tasks, reviews, and approvals flow through here.</div>
+            </div>
+          </div>
+          <template x-for="m in busMessages" :key="m.id">
+            <div class="msg-item">
+              <span class="msg-from" x-text="workerLabel(m.from_agent)"></span>
+              <span class="msg-arr">→</span>
+              <span class="msg-to" x-text="workerLabel(m.to_agent)"></span>
+              <span class="msg-type" :class="m.type" x-text="msgTypeLabel(m.type)"></span>
+              <span class="msg-subject" x-text="m.subject"></span>
+            </div>
+          </template>
+          <div style="padding:18px;text-align:center;color:var(--mut);font-size:13px" x-show="!busMessages.length">
+            No messages yet — your team will message each other as they work.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════ CAPABILITIES ════ -->
+    <div class="content" x-show="tab==='capabilities'">
+      <div class="pad">
+        <div style="margin-bottom:6px;font-size:15px;font-weight:600;">Add new abilities to your team</div>
+        <div style="color:var(--mut);font-size:13px;margin-bottom:18px;">Install a capability pack and your team can immediately start using those new skills to earn more.</div>
+
+        <div class="install-bar">
+          <input
+            class="install-input"
+            x-model="skillSource"
+            placeholder="Paste a folder path, Git URL, or .zip link…"
+            @keydown.enter="installSkill()">
+          <button class="btn primary" @click="installSkill()" :disabled="skillBusy" style="min-width:100px;">
+            <span x-show="!skillBusy">Install</span>
+            <span x-show="skillBusy" style="display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .8s linear infinite;"></span>
+          </button>
+        </div>
+
+        <div x-show="skillMsg" style="padding:11px 14px;border-radius:10px;border:1px solid var(--line);margin-bottom:14px;font-size:13px;" x-text="skillMsg"></div>
+
+        <div class="empty-state" x-show="!skills.length">
+          <div class="es-ico">💡</div>
+          <h4>No capabilities installed yet</h4>
+          <p>Paste a path or URL above to give your team new powers — like web scraping, image generation, or email outreach.</p>
+        </div>
+
+        <template x-for="s in skills" :key="s.name">
+          <div class="skill-card">
+            <div class="skill-name" x-text="s.name"></div>
+            <div class="skill-desc" x-text="s.description||'No description provided.'"></div>
+            <div class="skill-files" x-show="s.files&&s.files.length" x-text="'Files: '+(s.files||[]).join(', ')"></div>
+            <div class="btn-row">
+              <button class="btn sm" @click="runSkill(s.name)">▶ Run now</button>
+              <button class="btn sm danger" @click="removeSkill(s.name)">Remove</button>
+            </div>
+            <div class="skill-out" x-show="skillOut[s.name]">
+              <pre x-text="skillOut[s.name]"></pre>
+            </div>
+          </div>
+        </template>
+      </div>
+    </div>
+
+    <!-- ════ PRIVATE WORKSPACES ════ -->
+    <div class="content" x-show="tab==='workspaces'">
+      <div class="pad">
+
+        <!-- Mode banner -->
+        <div class="mode-banner">
+          <div class="mode-icon" x-text="execMode==='container'?'🖥️':'🧵'"></div>
+          <div>
+            <div class="mode-title" x-text="execMode==='container'?'Each worker has their own private computer':'Workers share a single computer (basic mode)'"></div>
+            <div class="mode-desc">
+              <template x-if="execMode==='container'">
+                <span>Every AI worker runs in their own isolated environment — 256 MB memory, their own file storage, always restarting if anything goes wrong.</span>
+              </template>
+              <template x-if="execMode!=='container'">
+                <span>To give each worker their own computer, install Docker, build the image with <code>docker build -t autoearn:latest .</code>, then restart.</span>
+              </template>
+            </div>
+          </div>
+        </div>
+
+        <!-- Workspace cards -->
+        <div class="section-label" style="margin-bottom:12px;">
+          Worker environments
+          <div class="help-wrap" x-data="{open:false}">
+            <button class="help-btn" :class="open&&'open'" @click.stop="open=!open">?</button>
+            <div class="help-pop" x-show="open">Each worker runs in their own private space — like their own mini computer. They can install software, write files, and browse the web without interfering with each other.</div>
+          </div>
+        </div>
+        <div class="ws-grid">
+          <template x-for="c in containers" :key="c.container">
+            <div class="ws-card">
+              <div class="ws-card-name" x-text="workerLabel(c.agent||(c.container.replace(/^ae_/,'')))"></div>
+              <div class="ws-card-id" x-text="c.container"></div>
+              <div class="ws-card-status" :class="wsStatus(c)">
+                <span class="ws-running-dot" x-show="wsStatus(c)==='running'"></span>
+                <span x-text="wsStatusLabel(c)"></span>
+              </div>
+              <div x-show="c.size&&c.size!=='—'" style="font-size:11px;color:var(--mut);margin-top:4px;" x-text="c.size"></div>
+              <div class="ws-actions">
+                <button class="btn sm" @click="viewLogs(c.agent||(c.container.replace(/^ae_/,'')))">📋 See logs</button>
+                <button class="btn sm" @click="trigger(c.agent||(c.container.replace(/^ae_/,'')))">▶ Run now</button>
+              </div>
+            </div>
+          </template>
+          <div class="empty-state" x-show="!containers.length" style="grid-column:1/-1">
+            <div class="es-ico">🖥️</div>
+            <h4>No workspaces yet</h4>
+            <p>Workers are running in basic mode. Install Docker and build the image to give each worker their own private computer.</p>
+          </div>
+        </div>
+
+        <!-- Log viewer -->
+        <div class="log-panel" x-show="logAgent">
+          <div class="log-panel-hd">
+            <span>📋 Logs — <b x-text="workerLabel(logAgent||'')"></b></span>
+            <button class="btn sm" @click="logAgent=null">✕ Close</button>
+          </div>
+          <div class="log-pre" x-text="logContent||'Loading…'"></div>
+        </div>
+
+        <!-- Browser sessions -->
+        <div x-show="sandboxes.browsers&&sandboxes.browsers.length" style="margin-top:20px;">
+          <div class="section-label" style="margin-bottom:12px;">
+            🌐 Browser sessions
+            <div class="help-wrap" x-data="{open:false}">
+              <button class="help-btn" :class="open&&'open'" @click.stop="open=!open">?</button>
+              <div class="help-pop" x-show="open">These workers currently have a browser open and are surfing the web — just like you would, but automatically. They're looking for opportunities, doing research, or posting content.</div>
+            </div>
+          </div>
+          <div class="ws-grid">
+            <template x-for="bname in sandboxes.browsers||[]" :key="bname">
+              <div class="ws-card">
+                <div class="ws-card-name">🌐 <span x-text="workerLabel(bname)"></span></div>
+                <div class="ws-card-status running">
+                  <span class="ws-running-dot"></span>
+                  Browsing the web
+                </div>
+                <div class="ws-actions">
+                  <button class="btn sm" @click="chatAgent=bname;tab='chat'">💬 Chat</button>
+                </div>
+              </div>
+            </template>
+          </div>
+        </div>
+
+        <!-- Tool sandbox containers -->
+        <div x-show="sandboxes.containers&&sandboxes.containers.length" style="margin-top:20px;">
+          <div class="section-label" style="margin-bottom:12px;">
+            ⚡ Tool environments
+            <div class="help-wrap" x-data="{open:false}">
+              <button class="help-btn" :class="open&&'open'" @click.stop="open=!open">?</button>
+              <div class="help-pop" x-show="open">Some workers spin up a temporary mini-computer to run code, download files, or test things. It's completely safe and isolated from the rest of your system.</div>
+            </div>
+          </div>
+          <div class="ws-grid">
+            <template x-for="c in sandboxes.containers||[]" :key="c.name">
+              <div class="ws-card">
+                <div class="ws-card-name" x-text="c.name.replace(/^autoearn_/,'').replace(/_sandbox$/,'').replace(/_/g,' ')"></div>
+                <div class="ws-card-status running">
+                  <span class="ws-running-dot"></span>
+                  <span x-text="c.status"></span>
+                </div>
+                <div class="ws-actions">
+                  <button class="btn sm danger" @click="destroySandbox(c.name)">Remove</button>
+                </div>
+              </div>
+            </template>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div><!-- /.main -->
+
+  <!-- ── Bottom Nav (mobile) ── -->
+  <nav class="bottom-nav">
+    <button :class="tab==='chat'&&'active'" @click="tab='chat'">
+      <span class="bn-ico">💬</span>Chat
+    </button>
+    <button :class="tab==='team'&&'active'" @click="tab='team'">
+      <span class="bn-ico">👥</span>Team
+    </button>
+    <button :class="tab==='earnings'&&'active'" @click="tab='earnings'">
+      <span class="bn-ico">💰</span>Earnings
+    </button>
+    <button :class="tab==='capabilities'&&'active'" @click="tab='capabilities'">
+      <span class="bn-ico">💡</span>Skills
+    </button>
+    <button :class="tab==='workspaces'&&'active'" @click="tab='workspaces'">
+      <span class="bn-ico">🖥️</span>Spaces
+    </button>
+  </nav>
+
+  <!-- Phone FAB (mobile) -->
+  <button class="phone-fab" @click="phoneModalOpen=true" aria-label="Open on phone">📱</button>
+
+  <!-- Phone modal -->
+  <template x-if="phoneModalOpen">
+    <div class="phone-modal-bg" @click.self="phoneModalOpen=false">
+      <div class="phone-modal">
+        <h3>📱 Open AutoEarn on your phone</h3>
+        <template x-if="networkInfo.url">
+          <div>
+            <div class="pm-url" x-text="networkInfo.url" @click="copyUrl(networkInfo.url)"></div>
+            <div class="pm-meta">
+              Make sure your phone is on the same Wi-Fi as this computer.<br>
+              IP: <b x-text="networkInfo.local_ip"></b> · Port: <b x-text="networkInfo.port"></b>
+            </div>
+          </div>
+        </template>
+        <template x-if="!networkInfo.url">
+          <div class="pm-meta" style="margin-bottom:18px;">Finding your network address…</div>
+        </template>
+        <button class="pm-copy" @click="copyUrl(networkInfo.url)" x-text="urlCopied?'✓ Link copied!':'Copy link'"></button>
+        <button class="pm-close" @click="phoneModalOpen=false">Close</button>
+      </div>
+    </div>
+  </template>
+
+  <!-- Agent detail modal -->
+  <template x-if="selected">
+    <div class="modal-bg" @click.self="selected=null">
+      <div class="modal">
+        <div class="modal-hd">
+          <span class="status-dot" :class="workerDotClass(selected)" style="flex-shrink:0"></span>
+          <h3 x-text="workerLabel(selected.name)"></h3>
+          <span class="status-badge" :class="workerDotClass(selected)" x-text="workerStatusLabel(selected)"></span>
+          <button class="btn sm" style="margin-left:auto;" @click="selected=null">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="kv-grid">
+            <span class="kv-label">Role</span>
+            <span class="kv-val" x-text="workerTeamLabel(selected)"></span>
+
+            <span class="kv-label">
+              Goal
+              <div class="help-wrap" x-data="{open:false}">
+                <button class="help-btn" :class="open&&'open'" @click.stop="open=!open">?</button>
+                <div class="help-pop" x-show="open">This is what this AI worker focuses on every time they run. They can change their own goal if they decide something else would make more money.</div>
+              </div>
+            </span>
+            <span class="kv-val" x-text="selected.goal"></span>
+
+            <span class="kv-label">
+              Frequency
+              <div class="help-wrap" x-data="{open:false}">
+                <button class="help-btn" :class="open&&'open'" @click.stop="open=!open">?</button>
+                <div class="help-pop" x-show="open">How often this worker wakes up, checks for new tasks, and takes action. Workers can change their own frequency to work faster or slower depending on what's needed.</div>
+              </div>
+            </span>
+            <span class="kv-val" x-text="'Every '+selected.interval_minutes+' minutes'"></span>
+
+            <span class="kv-label">
+              AI brain
+              <div class="help-wrap" x-data="{open:false}">
+                <button class="help-btn" :class="open&&'open'" @click.stop="open=!open">?</button>
+                <div class="help-pop" x-show="open">Which AI model powers this worker's thinking. "Auto" means it'll pick the best free model available. Workers can switch their own AI brain if they think a different one would help.</div>
+              </div>
+            </span>
+            <span class="kv-val" x-text="selected.model==='auto'?'Auto (best available)':selected.model"></span>
+
+            <span class="kv-label">
+              Spending limit
+              <div class="help-wrap" x-data="{open:false}">
+                <button class="help-btn" :class="open&&'open'" @click.stop="open=!open">?</button>
+                <div class="help-pop" x-show="open">The maximum this worker can spend from your connected payment accounts per month. $0 means they only use free resources.</div>
+              </div>
+            </span>
+            <span class="kv-val" x-text="'$'+(selected.budget_usd||0).toFixed(2)+'/mo'"></span>
+
+            <span class="kv-label">History</span>
+            <span class="kv-val" x-text="selected.runs+' runs · '+selected.errors+' errors'"></span>
+          </div>
+
+          <div x-show="agentPlan(selected.name)" style="margin-bottom:14px;">
+            <div style="font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Current plan</div>
+            <div style="font-size:13px;color:var(--teal);font-style:italic;background:rgba(45,212,191,.06);border-radius:8px;padding:10px 12px;" x-text="agentPlan(selected.name)"></div>
+          </div>
+
+          <div x-show="agentTasks(selected.name).length" style="margin-bottom:14px;">
+            <div style="font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Recent work</div>
+            <div class="timeline" style="padding:0;">
+              <template x-for="t in agentTasks(selected.name)" :key="t.id">
+                <div class="tl-item" :class="t.status" style="padding:8px 0;">
+                  <div class="tl-rail">
+                    <span class="tl-dot" :class="t.status">
+                      <span x-show="t.status==='running'" class="tl-spin"></span>
+                      <span x-show="t.status==='done'">✓</span>
+                      <span x-show="t.status==='error'">!</span>
+                    </span>
+                  </div>
+                  <div class="tl-body">
+                    <div class="tl-top"><span class="tl-title" x-text="t.title"></span><span class="tl-time" x-text="taskTime(t)"></span></div>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </div>
+
+          <div x-show="selected.last_result" style="margin-bottom:14px;">
+            <div style="font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Last action result</div>
+            <pre x-text="selected.last_result"></pre>
+          </div>
+
+          <div style="margin-bottom:16px;">
+            <div style="font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">
+              Tools available
+              <div class="help-wrap" x-data="{open:false}" style="display:inline-flex;margin-left:6px;">
+                <button class="help-btn" :class="open&&'open'" @click.stop="open=!open">?</button>
+                <div class="help-pop" x-show="open">These are the actions this worker is allowed to take — like searching the web, posting content, or messaging other workers. They can only do what's in this list.</div>
+              </div>
+            </div>
+            <div class="tool-tags">
+              <template x-for="t in selected.tools" :key="t">
+                <span class="tool-tag"
+                  :class="t.startsWith('browser_')?'browser':t.startsWith('sandbox')?'sandbox':(t.startsWith('mouse_')||t.startsWith('keyboard_')||t==='screenshot'?'computer':(t.startsWith('update_')||t.startsWith('spawn_')||t==='kill_agent'?'self':''))"
+                  x-text="friendlyToolName(t)">
+                </span>
+              </template>
+            </div>
+          </div>
+
+          <div class="btn-row">
+            <button class="btn primary" @click="trigger(selected.name)">▶ Run right now</button>
+            <button class="btn" @click="chatAgent=selected.name;tab='chat';selected=null">💬 Chat with them</button>
+            <button class="btn" x-show="isAgentBrowsing(selected.name)" @click="selected=null;tab='workspaces'">🌐 See browser</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </template>
+
+</div><!-- /.layout -->
+
+<script>
+  function app() {
+    return {
+      /* ── State ── */
+      tab: 'chat',
+      agents: [],
+      messages: [],
+      busMessages: [],
+      logs: [],
+      revenue: { total_usd: 0, by_source: [] },
+      providers: [],
+      selected: null,
+      input: '',
+      chatAgent: 'ceo',
+      thinking: false,
+      skills: [],
+      skillSource: '',
+      skillMsg: '',
+      skillBusy: false,
+      skillOut: {},
+      sandboxes: { containers: [], browsers: [] },
+      sandboxOut: {},
+      containers: [],
+      execMode: 'thread',
+      logAgent: null,
+      logContent: '',
+      networkInfo: { url: '', local_ip: '', port: 4200 },
+      drawerOpen: false,
+      phoneModalOpen: false,
+      urlCopied: false,
+      showWelcome: false,
+      authEnabled: false,
+      tasks: [],
+
+      /* ── Computed ── */
+      get activeWorkers() {
+        return this.agents.filter(a => {
+          if (!a.enabled) return false;
+          if ((a.last_result||'').startsWith('ERROR')) return false;
+          return (a.runs||0) > 0 || !!this.agentPlan(a.name);
+        }).length;
+      },
+      get workingNow() {
+        return this.tasks.filter(t => t.status === 'running').length;
+      },
+
+      /* ── Init ── */
+      init() {
+        fetch('/api/auth').then(x => x.json()).then(d => this.authEnabled = !!d.enabled).catch(() => {});
+        this.refresh();
+        this.loadTasks();
+        this.loadChat();
+        this.loadSkills();
+        this.loadNetwork();
+        setInterval(() => this.refresh(), 5000);
+        // Faster poll just for the live timeline so "doing → done" feels instant.
+        setInterval(() => this.loadTasks(), 2000);
+      },
+
+      async loadTasks() {
+        this.tasks = await fetch('/api/tasks?limit=40').then(x => x.json()).catch(() => this.tasks);
+      },
+
+      taskTime(t) {
+        const ts = (t.status === 'running') ? t.started_at : (t.ended_at || t.started_at);
+        if (t.status === 'running') return 'working now';
+        return this.relTime(ts);
+      },
+      relTime(sec) {
+        if (!sec) return '';
+        const d = Math.max(0, Date.now() / 1000 - sec);
+        if (d < 5)   return 'just now';
+        if (d < 60)  return Math.floor(d) + 's ago';
+        if (d < 3600) return Math.floor(d / 60) + 'm ago';
+        if (d < 86400) return Math.floor(d / 3600) + 'h ago';
+        return Math.floor(d / 86400) + 'd ago';
+      },
+
+      async signOut() {
+        try { await fetch('/api/logout', { method: 'POST' }); } catch (_) {}
+        location.href = '/login';
+      },
+
+      /* ── Data fetching ── */
+      async refresh() {
+        const [a, r, b, l, h, sb, ct, md] = await Promise.all([
+          fetch('/api/agents').then(x => x.json()).catch(() => []),
+          fetch('/api/revenue').then(x => x.json()).catch(() => ({ total_usd: 0, by_source: [] })),
+          fetch('/api/messages?limit=30').then(x => x.json()).catch(() => []),
+          fetch('/api/logs?limit=60').then(x => x.json()).catch(() => []),
+          fetch('/api/health').then(x => x.json()).catch(() => ({})),
+          fetch('/api/sandboxes').then(x => x.json()).catch(() => ({ containers: [], browsers: [] })),
+          fetch('/api/containers').then(x => x.json()).catch(() => []),
+          fetch('/api/mode').then(x => x.json()).catch(() => ({ mode: 'thread' })),
+        ]);
+        this.agents = a;
+        this.revenue = r;
+        this.busMessages = b;
+        this.logs = l;
+        this.providers = h.providers || [];
+        this.sandboxes = sb;
+        this.containers = ct;
+        this.execMode = md.mode || 'thread';
+        if (this.selected) this.selected = a.find(x => x.name === this.selected.name) || this.selected;
+        if (this.chatAgent === 'ceo' && a.length) this.chatAgent = a[0].name;
+        if (!this._welcomeChecked) {
+          this._welcomeChecked = true;
+          if (this.providers.length === 0 && a.length > 0) {
+            setTimeout(() => { this.showWelcome = true; }, 600);
+          }
+        }
+      },
+
+      async loadChat() {
+        this.messages = await fetch('/api/chat/history?limit=100').then(x => x.json()).catch(() => []);
+        this.scrollChat();
+      },
+      async loadSkills() {
+        this.skills = await fetch('/api/skills').then(x => x.json()).catch(() => []);
+      },
+      async loadNetwork() {
+        try {
+          const d = await fetch('/api/network').then(x => x.json());
+          this.networkInfo = { url: d.url||'', local_ip: d.local_ip||'', port: d.port||4200 };
+        } catch {
+          this.networkInfo = {
+            url: window.location.origin,
+            local_ip: window.location.hostname,
+            port: parseInt(window.location.port)||4200,
+          };
+        }
+      },
+
+      /* ── Chat ── */
+      async send() {
+        const text = this.input.trim();
+        if (!text || this.thinking) return;
+        this.input = '';
+        this.thinking = true;
+        this.messages.push({ id: 'tmp'+Date.now(), role: 'user', content: text, kind: 'text' });
+        this.scrollChat();
+        try {
+          await fetch('/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: text, agent: this.chatAgent }),
+          });
+        } finally {
+          this.thinking = false;
+          await this.loadChat();
+          if (text.startsWith('/')) { this.loadSkills(); this.refresh(); }
+        }
+      },
+
+      render(t) {
+        if (!t) return '';
+        let h = t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        h = h.replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/`([^`]+)`/g,'<code>$1</code>');
+        return h;
+      },
+      scrollChat() {
+        this.$nextTick(() => {
+          const el = this.$refs.chatScroll;
+          if (el) el.scrollTop = el.scrollHeight;
+        });
+      },
+      autosize(e) {
+        e.target.style.height = 'auto';
+        e.target.style.height = Math.min(e.target.scrollHeight, 160) + 'px';
+      },
+
+      /* ── Worker label helpers ── */
+      workerLabel(name) {
+        const map = {
+          ceo:'CEO', cfo:'CFO', cmo:'CMO', cto:'CTO',
+          strategist:'Strategist', researcher:'Researcher',
+          writer:'Writer', editor:'Editor', designer:'Designer',
+          coder:'Developer', reviewer:'Reviewer', analyst:'Market Analyst',
+          trader:'Trader', publisher:'Publisher', scout:'Scout',
+          proposer:'Deal Proposer', closer:'Closer',
+          content_qc:'Content Reviewer', dev_qc:'Code Reviewer',
+          market_qc:'Market Reviewer', outreach_qc:'Outreach Reviewer',
+        };
+        return map[name] || (name ? name.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase()) : '');
+      },
+
+      workerTeamLabel(a) {
+        if (a.role === 'council') return 'Leadership team';
+        if (a.role === 'qc')     return 'Quality team';
+        const teams = { content:'Content team', dev:'Dev team', market:'Market team', outreach:'Outreach team' };
+        return teams[a.team] || (a.team ? a.team+' team' : 'Team');
+      },
+
+      teamSectionLabel(t) {
+        return {
+          content: '✍️ Content team — creates articles, blogs & written content',
+          dev:     '⚙️ Dev team — builds tools, scripts & technical products',
+          market:  '📈 Market team — analyzes opportunities & publishes to platforms',
+          outreach:'🤝 Outreach team — finds clients & closes deals',
+        }[t] || t;
+      },
+
+      workerDotClass(a) {
+        if (!a.enabled) return 'off';
+        if ((a.last_result||'').startsWith('ERROR')) return 'err';
+        if (this.agentPlan(a.name)) return 'plan';
+        if ((a.runs||0) > 0) return 'on';
+        return 'idle';
+      },
+
+      workerStatusLabel(a) {
+        if (!a.enabled) return 'Paused';
+        if ((a.last_result||'').startsWith('ERROR')) return 'Needs attention';
+        if (this.agentPlan(a.name)) return 'Working now';
+        if ((a.runs||0) > 0) return 'Active';
+        return 'Starting up';
+      },
+
+      /* ── Activity feed helpers ── */
+      friendlyActivity(l) {
+        const detail = (l.detail||'').slice(0,120);
+        switch (l.action) {
+          case 'plan':
+            const reasoning = detail.replace(/^→\s*\S+\s*/, '').replace(/^\[(.+)\]$/, '$1').replace(/\[(.+?)\]/, '$1');
+            return reasoning && !reasoning.startsWith('No action') ? reasoning : 'Thinking about next move';
+          case 'run_error':    return 'Hit a snag — ' + detail;
+          case 'fatal_error':  return 'Crashed unexpectedly';
+          case 'ai_error':     return 'Couldn\'t reach AI — will retry automatically';
+          case 'startup':      return 'Came online';
+          case 'reflect_change': return 'Updated themselves: ' + detail.replace(/\w+:\s*/,'');
+          default:             return detail || l.action;
+        }
+      },
+
+      feedIcon(l) {
+        if ((l.detail||'').includes('revenue') || l.action === 'revenue') return '💰';
+        if (l.action === 'plan')    return '🧠';
+        if (l.action === 'startup') return '🟢';
+        if (l.action.includes('error')) return '⚠️';
+        if (l.action === 'reflect_change') return '🔄';
+        return '⚡';
+      },
+
+      feedItemClass(l) {
+        if (l.action === 'plan') return 'plan-entry';
+        if (l.action.includes('error')) return 'error-entry';
+        if ((l.detail||'').includes('revenue')) return 'earn-entry';
+        return '';
+      },
+
+      msgTypeLabel(t) {
+        const map = { directive:'Task', work_item:'Work', output:'Delivery', review:'Review', approval:'✅ Approved', rejection:'❌ Revise' };
+        return map[t] || t;
+      },
+
+      /* ── Agent plan ── */
+      agentPlan(name) {
+        // Prefer a live, in-progress task ("Creating a file…") if one exists.
+        const live = this.tasks.find(t => t.agent === name && t.status === 'running');
+        if (live) return live.title;
+        const e = this.logs.find(l => l.agent === name && l.action === 'plan');
+        if (!e) return '';
+        const d = (e.detail||'');
+        if (d.startsWith('No action')) return '';
+        const r = d.replace(/^→\s*\S+\s*/,'').replace(/^\[(.+)\]$/,'$1').replace(/\[(.+?)\]/,'$1');
+        return r.slice(0,80);
+      },
+
+      agentTasks(name) {
+        return this.tasks.filter(t => t.agent === name).slice(0, 8);
+      },
+
+      /* ── Workspace helpers ── */
+      wsStatus(c) {
+        if (c.status.includes('Up') || c.status.includes('running')) return 'running';
+        if (c.status.includes('thread')) return 'thread';
+        return 'stopped';
+      },
+
+      wsStatusLabel(c) {
+        if (c.status.includes('Up') || c.status.includes('running')) return 'Running';
+        if (c.status.includes('thread')) return 'Basic mode';
+        return 'Stopped';
+      },
+
+      async viewLogs(agentName) {
+        this.logAgent = agentName;
+        this.logContent = '';
+        try {
+          const d = await fetch('/api/agents/'+agentName+'/logs?lines=100').then(x => x.json());
+          this.logContent = d.logs || '(no logs yet)';
+        } catch (e) {
+          this.logContent = 'Could not load logs: '+e;
+        }
+      },
+
+      /* ── Sandbox helpers ── */
+      async destroySandbox(containerName) {
+        if (!confirm('Remove this tool environment? It will be recreated next time the worker needs it.')) return;
+        const agent = containerName.replace(/^autoearn_/,'').replace(/_sandbox$/,'');
+        await fetch('/api/chat', {
+          method: 'POST',
+          headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({message:'/trigger '+agent, agent:'cto'}),
+        });
+        setTimeout(() => this.refresh(), 1500);
+      },
+
+      /* ── Skills ── */
+      async installSkill() {
+        if (!this.skillSource.trim()) return;
+        this.skillBusy = true;
+        this.skillMsg = 'Installing…';
+        try {
+          const r = await fetch('/api/skills/install', {
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({source:this.skillSource.trim()}),
+          });
+          const d = await r.json();
+          this.skillMsg = r.ok ? ('✅ Installed: '+d.name) : ('❌ '+( d.detail||'Installation failed'));
+          if (r.ok) { this.skillSource=''; this.loadSkills(); }
+        } catch (e) {
+          this.skillMsg = '❌ '+e;
+        } finally {
+          this.skillBusy = false;
+        }
+      },
+
+      async runSkill(n) {
+        const inp = prompt('Input for "'+n+'" (leave blank if none):')||'';
+        this.skillOut[n] = 'Running…';
+        const r = await fetch('/api/skills/'+n+'/run', {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({input:inp}),
+        });
+        const d = await r.json();
+        this.skillOut = {...this.skillOut, [n]: d.output};
+      },
+
+      async removeSkill(n) {
+        if (!confirm('Remove "'+n+'"? Your team will no longer be able to use it.')) return;
+        await fetch('/api/skills/'+n, {method:'DELETE'});
+        this.loadSkills();
+      },
+
+      /* ── Agent trigger ── */
+      async trigger(n) {
+        await fetch('/api/agents/'+n+'/trigger', {method:'POST'});
+        setTimeout(() => this.refresh(), 900);
+      },
+
+      /* ── Browser / sandbox checks ── */
+      isAgentBrowsing(name) {
+        return (this.sandboxes.browsers||[]).includes(name);
+      },
+      isAgentSandboxed(name) {
+        const cname = 'autoearn_'+name.toLowerCase().replace(/[^a-z0-9_]/g,'_')+'_sandbox';
+        return (this.sandboxes.containers||[]).some(c=>c.name===cname);
+      },
+
+      /* ── Tool name display ── */
+      friendlyToolName(t) {
+        const map = {
+          web_search:'Search web', fetch_url:'Fetch webpage',
+          save_output:'Save file', log_revenue:'Log earnings',
+          send_message:'Message team', get_messages:'Read messages',
+          spawn_agent:'Create worker', kill_agent:'Remove worker',
+          get_all_agents:'List team', set_budget:'Set budget',
+          update_goal:'Change goal', update_system_prompt:'Change personality',
+          update_model:'Switch AI', update_interval:'Change frequency',
+          update_tools:'Change abilities', update_memory:'Update memory',
+          get_revenue_summary:'Check earnings', get_recent_activity:'Check activity',
+          publish_wordpress:'Post to WordPress', publish_medium:'Post to Medium',
+          post_telegram:'Post to Telegram', post_reddit:'Post to Reddit',
+          fetch_prices:'Get crypto prices', http_request:'Make web request',
+          sandbox_exec:'Run in workspace', sandbox_install:'Install in workspace',
+          sandbox_browse:'Browse in workspace', sandbox_write:'Write in workspace',
+          screenshot:'Take screenshot', mouse_click:'Click mouse',
+          keyboard_type:'Type text', browser_open:'Open browser',
+          browser_click:'Click in browser', browser_type:'Type in browser',
+        };
+        return map[t] || t.replace(/_/g,' ');
+      },
+
+      /* ── Phone / URL copy ── */
+      async copyUrl(url) {
+        if (!url) return;
+        try {
+          await navigator.clipboard.writeText(url);
+        } catch {
+          const ta = document.createElement('textarea');
+          ta.value = url;
+          ta.style.cssText = 'position:fixed;opacity:0';
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand('copy');
+          document.body.removeChild(ta);
+        }
+        this.urlCopied = true;
+        setTimeout(()=>{ this.urlCopied = false; }, 2000);
+      },
+    };
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,7 @@
+{
+  "name": "about-page",
+  "version": "1.0.0",
+  "description": "Write compelling About page copy for a company or personal brand that builds trust, communicates values, and converts visitors into leads.",
+  "input_description": "Company or person name, mission, founding story or background, core values, team highlights, and desired reader action.",
+  "output_description": "Full About page in Markdown with hero statement, origin story, mission/values section, team or founder spotlight, social proof indicators, and a CTA."
+}

@@ -1,0 +1,7 @@
+{
+  "name": "email-sequence",
+  "version": "1.0.0",
+  "description": "Generate a 5-email welcome and nurture sequence that onboards subscribers, builds trust, and drives conversions.",
+  "input_description": "Product or service name, target audience, primary value proposition, and desired end action (purchase, book a call, upgrade, etc.).",
+  "output_description": "Five complete emails with subject lines, preview text, body copy, and CTAs — formatted for direct import into an email platform."
+}

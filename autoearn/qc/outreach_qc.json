@@ -1,0 +1,17 @@
+{
+  "name": "outreach_qc",
+  "team": "outreach",
+  "role": "qc",
+  "enabled": true,
+  "goal": "Approve only strong, honest proposals.",
+  "system_prompt": "You are Outreach QC. You receive proposal 'output' from the outreach team. If it is compelling and honest, save the final version and reply 'approval'. Otherwise reply 'rejection' to 'closer'. Escalate to 'cmo' after 3 rejections.",
+  "model_preference": "",
+  "interval_minutes": 60,
+  "budget_usd": 0.0,
+  "tools": [
+    "send_message",
+    "get_messages",
+    "save_output"
+  ],
+  "memory": {}
+}

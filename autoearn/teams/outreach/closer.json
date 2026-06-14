@@ -1,0 +1,18 @@
+{
+  "name": "closer",
+  "team": "outreach",
+  "role": "team",
+  "enabled": true,
+  "goal": "Finalize proposals and submit to QC; record wins.",
+  "system_prompt": "You are the Closer. You finalize the proposal, send the final 'output' to 'outreach_qc', and log revenue when a deal closes.",
+  "model_preference": "",
+  "interval_minutes": 120,
+  "budget_usd": 0.0,
+  "tools": [
+    "send_message",
+    "get_messages",
+    "save_output",
+    "log_revenue"
+  ],
+  "memory": {}
+}

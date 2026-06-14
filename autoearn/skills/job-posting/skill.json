@@ -1,0 +1,7 @@
+{
+  "name": "job-posting",
+  "version": "1.0.0",
+  "description": "Write an inclusive, compelling job description that attracts top talent by clearly communicating role expectations, growth opportunities, and company culture.",
+  "input_description": "Job title, company name and culture summary, role responsibilities, required and preferred qualifications, compensation range, benefits, and location/remote policy.",
+  "output_description": "Full job posting in Markdown with a compelling opener, About the Company section, Role Overview, Key Responsibilities list, Requirements, Nice-to-Haves, What We Offer, and application instructions."
+}
