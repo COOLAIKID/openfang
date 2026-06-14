@@ -1,31 +1,44 @@
 #!/usr/bin/env bash
-# Runs every time the Codespace starts (or resumes after sleep).
-# Boots AutoEarn on port 4200 in the background so the dashboard is live.
+# Runs on Codespace create AND every time you reconnect.
+# Installs deps, starts AutoEarn, forces port 4200 to public.
 set -euo pipefail
 
 REPO=/workspaces/openfang
 LOG="$REPO/.autoearn.log"
 PID="$REPO/.autoearn.pid"
 
-# Kill any old instance (Codespace resumed from sleep)
+# Install deps (idempotent — fast if already installed)
+pip install -q -r "$REPO/autoearn/requirements-cloud.txt"
+
+# Kill any old instance
 if [ -f "$PID" ] && kill -0 "$(cat "$PID")" 2>/dev/null; then
-  echo "AutoEarn already running (pid $(cat "$PID"))"
-  exit 0
+  kill "$(cat "$PID")" 2>/dev/null || true
+  sleep 1
 fi
 
-echo "Starting AutoEarn..."
+# Start the server
 cd "$REPO/autoearn"
 nohup env HOST=0.0.0.0 PORT=4200 python main.py >"$LOG" 2>&1 &
 echo $! >"$PID"
 
-# Wait for the dashboard to come up (up to 30 s)
-for i in $(seq 1 30); do
+# Wait for it to be ready (up to 60 s)
+echo "Waiting for AutoEarn to start..."
+for i in $(seq 1 60); do
   if curl -sf http://localhost:4200/api/health >/dev/null 2>&1; then
-    echo "AutoEarn is live on port 4200 ✓"
-    exit 0
+    echo "AutoEarn is up ✓"
+    break
   fi
   sleep 1
 done
 
-echo "Dashboard didn't respond in 30 s — check $LOG"
-tail -20 "$LOG"
+# Force the port to public so the URL works from any device
+gh codespace ports visibility 4200:public \
+  --codespace "${CODESPACE_NAME:-}" 2>/dev/null && \
+  echo "Port 4200 is now public ✓" || \
+  echo "Port visibility: set it to Public in the PORTS tab if needed"
+
+echo ""
+echo "==================================================="
+echo "  Your dashboard URL:"
+echo "  https://${CODESPACE_NAME}-4200.app.github.dev"
+echo "==================================================="
