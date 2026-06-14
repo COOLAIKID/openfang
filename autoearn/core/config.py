@@ -57,3 +57,12 @@ def section(name: str) -> dict[str, Any]:
 
 def get(section_name: str, key: str, default: Any = None) -> Any:
     return section(section_name).get(key, default)
+
+
+def cfg(dotted_key: str, fallback: Any = None) -> Any:
+    """Look up a dotted config key (e.g. 'analytics.db_path'), returning fallback if absent."""
+    parts = dotted_key.split(".", 1)
+    if len(parts) == 2:
+        sec, key = parts
+        return section(sec).get(key, fallback)
+    return load().get(parts[0], fallback)
