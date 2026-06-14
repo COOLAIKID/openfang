@@ -14,7 +14,8 @@ from autoearn.core import course_builder as cb
 @pytest.fixture(autouse=True)
 def _isolated_db(tmp_path, monkeypatch):
     db_path = tmp_path / "test.db"
-    monkeypatch.setattr("autoearn.core.database.get_db_path", lambda: str(db_path))
+    # Patch the name as it exists in course_builder's own namespace (imported via 'from')
+    monkeypatch.setattr("autoearn.core.course_builder.get_db_path", lambda: str(db_path))
     cb._schema_ready = False
     yield
     cb._schema_ready = False
