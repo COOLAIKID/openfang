@@ -11,7 +11,8 @@ import socket
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import HTMLResponse
+from fastapi.responses import FileResponse, HTMLResponse, Response
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from core import ai_client, connectors, database as db, message_bus, providers, sandbox, skills
@@ -19,7 +20,9 @@ from core.chat import Chat
 from core.container_orchestrator import ContainerOrchestrator
 from core.toolkit.computer import active_browsers
 
-TEMPLATE = Path(__file__).resolve().parent / "templates" / "index.html"
+DASH_DIR = Path(__file__).resolve().parent
+TEMPLATE = DASH_DIR / "templates" / "index.html"
+STATIC_DIR = DASH_DIR / "static"
 
 
 # Request bodies (module scope so FastAPI/pydantic resolve them as body models).
@@ -49,9 +52,34 @@ def create_app(orchestrator) -> FastAPI:
     manager = orchestrator.manager
     chat = Chat(orchestrator)
 
+    # Installable-app (PWA) assets so the dashboard works on a phone and still
+    # opens when the phone has no signal.
+    if STATIC_DIR.exists():
+        app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
+
     @app.get("/", response_class=HTMLResponse)
     def index() -> str:
         return TEMPLATE.read_text(encoding="utf-8")
+
+    @app.get("/manifest.webmanifest")
+    def manifest() -> Response:
+        return FileResponse(
+            STATIC_DIR / "manifest.webmanifest",
+            media_type="application/manifest+json",
+        )
+
+    @app.get("/sw.js")
+    def service_worker() -> Response:
+        # Served from the root so its scope covers the whole app.
+        return FileResponse(
+            STATIC_DIR / "sw.js",
+            media_type="text/javascript",
+            headers={"Cache-Control": "no-cache", "Service-Worker-Allowed": "/"},
+        )
+
+    @app.get("/favicon.ico")
+    def favicon() -> Response:
+        return FileResponse(STATIC_DIR / "icons" / "favicon.png", media_type="image/png")
 
     @app.get("/api/health")
     def health() -> dict:

@@ -1,0 +1,13 @@
+# Slim dependency set for cloud hosting (Render / Fly / Railway).
+# Leaves out desktop-only extras (pyautogui, playwright, Pillow, ollama) so the
+# free-tier build is fast and never fails on a headless server. Those features
+# are loaded lazily and simply stay dormant in the cloud.
+groq>=0.11.0
+google-generativeai>=0.8.0
+huggingface_hub>=0.25.0
+apscheduler>=3.10.0
+fastapi>=0.115.0
+uvicorn>=0.32.0
+requests>=2.32.0
+beautifulsoup4>=4.12.0
+praw>=7.7.0

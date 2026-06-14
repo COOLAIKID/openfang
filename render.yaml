@@ -1,0 +1,54 @@
+# One-tap cloud deploy for AutoEarn (works entirely from your phone).
+#
+# This runs all 21 AI workers + the dashboard 24/7 in the cloud. Open the URL
+# Render gives you on your phone, tap "Add to Home Screen", and you have the app.
+#
+# Your API keys are entered securely in Render's dashboard (sync:false means
+# they are NOT stored in this repo). Set at least one AI key (GROQ is free).
+services:
+  - type: web
+    name: autoearn
+    runtime: python
+    plan: free
+    rootDir: autoearn
+    buildCommand: pip install -r requirements-cloud.txt
+    startCommand: python main.py
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11.9"
+      - key: HOST
+        value: "0.0.0.0"
+
+      # ── AI brains (set at least ONE — Groq is free at groq.com) ──────────
+      - key: GROQ_API_KEY
+        sync: false
+      - key: GOOGLE_API_KEY
+        sync: false
+      - key: HUGGINGFACE_API_KEY
+        sync: false
+      - key: MISTRAL_API_KEY
+        sync: false
+
+      # ── Where the workers publish (all optional) ─────────────────────────
+      - key: WP_URL
+        sync: false
+      - key: WP_USER
+        sync: false
+      - key: WP_APP_PASSWORD
+        sync: false
+      - key: MEDIUM_TOKEN
+        sync: false
+      - key: TELEGRAM_TOKEN
+        sync: false
+      - key: TELEGRAM_CHAT_ID
+        sync: false
+      - key: REDDIT_CLIENT_ID
+        sync: false
+      - key: REDDIT_CLIENT_SECRET
+        sync: false
+      - key: REDDIT_USERNAME
+        sync: false
+      - key: REDDIT_PASSWORD
+        sync: false

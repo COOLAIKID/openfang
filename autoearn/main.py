@@ -30,6 +30,36 @@ from core.scheduler import Orchestrator as ThreadOrchestrator
 from dashboard.app import create_app
 
 
+def _start_keepalive() -> None:
+    """Keep a free cloud instance awake so the workers run 24/7.
+
+    Free hosts (e.g. Render) put a web service to sleep after a stretch with no
+    inbound traffic — which would also pause the agents. If the host gave us a
+    public URL, ping our own ``/api/health`` every few minutes so we look busy
+    and stay up. Does nothing on a laptop (no public URL set).
+    """
+    import os
+    import threading
+    import time
+
+    url = os.environ.get("RENDER_EXTERNAL_URL") or os.environ.get("PUBLIC_URL")
+    if not url:
+        return
+    health = url.rstrip("/") + "/api/health"
+
+    def _loop() -> None:
+        import urllib.request
+
+        while True:
+            time.sleep(600)  # 10 minutes
+            try:
+                urllib.request.urlopen(health, timeout=15).read()
+            except Exception:
+                pass
+
+    threading.Thread(target=_loop, daemon=True, name="keepalive").start()
+
+
 def build_app():
     db.init()
     manager = AgentManager()
@@ -42,6 +72,7 @@ def build_app():
         mode = "thread (APScheduler — install Docker and build the image for container mode)"
 
     orchestrator.start()
+    _start_keepalive()
     app = create_app(orchestrator)
     app.state.orchestrator = orchestrator
     app.state.mode = mode
@@ -54,9 +85,14 @@ def build_app():
 
 
 def main() -> None:
+    import os
+
     app, orchestrator, mode = build_app()
-    host = config.get("server", "host", "127.0.0.1")
-    port = int(config.get("server", "port", 4200))
+    # Cloud hosts (Render, Fly, Railway, …) inject HOST/PORT. Honour them so the
+    # same code runs on a laptop and in the cloud unchanged. Default to 0.0.0.0
+    # in the cloud so the public URL can reach us.
+    host = os.environ.get("HOST") or config.get("server", "host", "127.0.0.1")
+    port = int(os.environ.get("PORT") or config.get("server", "port", 4200))
 
     n = len(orchestrator.manager.all())
     print(f"AutoEarn online — {n} agents — mode: {mode}")
