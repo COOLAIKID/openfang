@@ -8,7 +8,7 @@
  *     error. (Workers still need the server online to actually earn — this is
  *     just so the screen always opens.)
  */
-const VERSION = "autoearn-v3";
+const VERSION = "autoearn-v4";
 const SHELL = "shell-" + VERSION;
 const DATA = "data-" + VERSION;
 
@@ -48,12 +48,15 @@ self.addEventListener("fetch", (event) => {
   if (url.origin !== self.location.origin) return; // ignore cross-origin
 
   // Page navigations: network-first, fall back to cached shell.
+  // Only cache a clean, signed-in dashboard (200, not a redirect to /login).
   if (req.mode === "navigate") {
     event.respondWith(
       fetch(req)
         .then((res) => {
-          const copy = res.clone();
-          caches.open(SHELL).then((c) => c.put("/", copy));
+          if (res.ok && !res.redirected && new URL(res.url).pathname === "/") {
+            const copy = res.clone();
+            caches.open(SHELL).then((c) => c.put("/", copy));
+          }
           return res;
         })
         .catch(() => caches.match("/").then((r) => r || caches.match(req)))
@@ -66,8 +69,10 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(
       fetch(req)
         .then((res) => {
-          const copy = res.clone();
-          caches.open(DATA).then((c) => c.put(req, copy));
+          if (res.ok) {
+            const copy = res.clone();
+            caches.open(DATA).then((c) => c.put(req, copy));
+          }
           return res;
         })
         .catch(() =>

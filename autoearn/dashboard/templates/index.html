@@ -24,6 +24,17 @@
         navigator.serviceWorker.register("/sw.js").catch(() => {});
       });
     }
+    // If the session expires, bounce to the sign-in screen automatically.
+    (function () {
+      const orig = window.fetch;
+      window.fetch = async function (...args) {
+        const res = await orig.apply(this, args);
+        if (res.status === 401 && !location.pathname.startsWith("/login")) {
+          location.href = "/login?next=" + encodeURIComponent(location.pathname);
+        }
+        return res;
+      };
+    })();
   </script>
   <style>
     /* ─── Design tokens ─────────────────────────────────────────────── */
@@ -354,6 +365,17 @@
       border-radius: 8px;
       padding: 4px 10px;
     }
+    .signout-btn {
+      font-size: 12.5px;
+      color: var(--mut);
+      background: none;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 5px 11px;
+      cursor: pointer;
+      transition: color .15s, border-color .15s;
+    }
+    .signout-btn:hover { color: var(--txt); border-color: var(--mut); }
 
     /* Content pane */
     .content {
@@ -1267,6 +1289,7 @@
       <button class="hamburger" @click="drawerOpen=!drawerOpen" aria-label="Menu">☰</button>
       <div class="topbar-title" x-text="{chat:'Chat with your AI team',team:'Your AI Team',earnings:'Earnings &amp; Activity',capabilities:'Capabilities',workspaces:'Private Workspaces'}[tab]"></div>
       <div class="topbar-rev" x-show="tab!=='earnings'" x-text="'$'+(revenue.total_usd||0).toFixed(2)"></div>
+      <button class="signout-btn" x-show="authEnabled" @click="signOut()" title="Sign out">Sign out</button>
     </div>
 
     <!-- ════ CHAT ════ -->
@@ -1798,6 +1821,7 @@
       phoneModalOpen: false,
       urlCopied: false,
       showWelcome: false,
+      authEnabled: false,
 
       /* ── Computed ── */
       get activeWorkers() {
@@ -1810,11 +1834,17 @@
 
       /* ── Init ── */
       init() {
+        fetch('/api/auth').then(x => x.json()).then(d => this.authEnabled = !!d.enabled).catch(() => {});
         this.refresh();
         this.loadChat();
         this.loadSkills();
         this.loadNetwork();
         setInterval(() => this.refresh(), 5000);
+      },
+
+      async signOut() {
+        try { await fetch('/api/logout', { method: 'POST' }); } catch (_) {}
+        location.href = '/login';
       },
 
       /* ── Data fetching ── */

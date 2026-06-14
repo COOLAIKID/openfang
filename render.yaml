@@ -21,6 +21,11 @@ services:
       - key: HOST
         value: "0.0.0.0"
 
+      # ── Your sign-in password (REQUIRED for a public URL) ────────────────
+      # Pick anything you'll remember — you'll type it to sign in on your phone.
+      - key: AUTOEARN_PASSWORD
+        sync: false
+
       # ── AI brains (set at least ONE — Groq is free at groq.com) ──────────
       - key: GROQ_API_KEY
         sync: false

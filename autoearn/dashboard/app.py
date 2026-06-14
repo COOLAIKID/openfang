@@ -10,8 +10,8 @@ import json
 import socket
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException
-from fastapi.responses import FileResponse, HTMLResponse, Response
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
@@ -19,9 +19,11 @@ from core import ai_client, connectors, database as db, message_bus, providers, 
 from core.chat import Chat
 from core.container_orchestrator import ContainerOrchestrator
 from core.toolkit.computer import active_browsers
+from dashboard import auth
 
 DASH_DIR = Path(__file__).resolve().parent
 TEMPLATE = DASH_DIR / "templates" / "index.html"
+LOGIN_TEMPLATE = DASH_DIR / "templates" / "login.html"
 STATIC_DIR = DASH_DIR / "static"
 
 
@@ -47,6 +49,10 @@ class SkillRun(BaseModel):
     input: str = ""
 
 
+class LoginBody(BaseModel):
+    password: str = ""
+
+
 def create_app(orchestrator) -> FastAPI:
     app = FastAPI(title="AutoEarn", docs_url="/docs")
     manager = orchestrator.manager
@@ -56,6 +62,44 @@ def create_app(orchestrator) -> FastAPI:
     # opens when the phone has no signal.
     if STATIC_DIR.exists():
         app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
+
+    # ---- Sign-in gate --------------------------------------------------
+    @app.middleware("http")
+    async def require_login(request: Request, call_next):
+        if not auth.auth_enabled() or auth.is_public_path(request.url.path):
+            return await call_next(request)
+        if auth.valid_cookie(request.cookies.get(auth.COOKIE)):
+            return await call_next(request)
+        # Not signed in: API calls get 401, pages get sent to /login.
+        if request.url.path.startswith("/api/"):
+            return JSONResponse({"error": "auth_required"}, status_code=401)
+        nxt = request.url.path
+        return RedirectResponse(url=f"/login?next={nxt}", status_code=302)
+
+    @app.get("/login", response_class=HTMLResponse)
+    def login_page() -> str:
+        return LOGIN_TEMPLATE.read_text(encoding="utf-8")
+
+    @app.post("/api/login")
+    def login(body: LoginBody) -> Response:
+        if not auth.check_password(body.password):
+            return JSONResponse({"error": "bad_password"}, status_code=401)
+        resp = JSONResponse({"ok": True})
+        resp.set_cookie(
+            auth.COOKIE, auth.session_token(),
+            max_age=60 * 60 * 24 * 30, httponly=True, samesite="lax",
+        )
+        return resp
+
+    @app.post("/api/logout")
+    def logout() -> Response:
+        resp = JSONResponse({"ok": True})
+        resp.delete_cookie(auth.COOKIE)
+        return resp
+
+    @app.get("/api/auth")
+    def auth_status() -> dict:
+        return {"enabled": auth.auth_enabled()}
 
     @app.get("/", response_class=HTMLResponse)
     def index() -> str:

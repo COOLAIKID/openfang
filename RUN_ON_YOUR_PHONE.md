@@ -21,31 +21,35 @@ Tap this button on your phone:
    `main` first and use `main`).
 3. Render reads `render.yaml` and sets everything up automatically.
 
-## Step 2 — Paste your keys (secure)
+## Step 2 — Set your password + paste your keys (secure)
 
-Render will ask for the values it needs. Paste at least **one** AI key:
+Render will ask for the values it needs:
 
-| Key | Where to get it (free) |
-|-----|------------------------|
-| `GROQ_API_KEY` | https://console.groq.com → API Keys |
-| `GOOGLE_API_KEY` | https://aistudio.google.com/app/apikey |
+| Key | What to put |
+|-----|-------------|
+| `AUTOEARN_PASSWORD` | **Pick any password** — this is what you'll type to sign in |
+| `GROQ_API_KEY` | A free AI key from https://console.groq.com → API Keys |
+| `GOOGLE_API_KEY` | (optional) https://aistudio.google.com/app/apikey |
 
+Set **`AUTOEARN_PASSWORD`** (so only you can get in) and at least **one** AI key.
 The publishing keys (WordPress / Medium / Telegram / Reddit) are optional — add
 any you have so the workers can post for you. These are typed into **Render's**
 secure settings, never into chat or this repo.
 
 Tap **Create / Deploy**. Wait ~2 minutes for it to go live.
 
-## Step 3 — Install the app on your phone
+## Step 3 — Sign in & install the app on your phone
 
 Render gives you a web address like `https://autoearn-xxxx.onrender.com`.
 
 1. Open that link in your phone browser.
-2. **iPhone:** tap **Share → Add to Home Screen.**
+2. **Sign in** with the password you just set.
+3. **iPhone:** tap **Share → Add to Home Screen.**
    **Android:** tap **⋮ menu → Install app / Add to Home Screen.**
 
-Now AutoEarn is an icon on your home screen. It opens like a real app, and even
-with no signal it still opens (showing the last data) instead of a blank error.
+Now AutoEarn is an icon on your home screen. It opens like a real app, stays
+signed in, and even with no signal it still opens (showing the last data)
+instead of a blank error.
 
 That's it — your 21 workers are now running around the clock. ✅
 
