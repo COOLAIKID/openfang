@@ -1,0 +1,31 @@
+{
+  "name": "AutoEarn",
+  "image": "mcr.microsoft.com/devcontainers/python:3.11",
+
+  "onCreateCommand": "pip install -q -r /workspaces/openfang/autoearn/requirements-cloud.txt",
+
+  "postStartCommand": "bash /workspaces/openfang/.devcontainer/start.sh",
+
+  "forwardPorts": [4200],
+  "portsAttributes": {
+    "4200": {
+      "label": "AutoEarn Dashboard",
+      "onAutoForward": "openBrowser",
+      "visibility": "public",
+      "protocol": "http"
+    }
+  },
+
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "bash"
+      }
+    }
+  },
+
+  "remoteEnv": {
+    "HOST": "0.0.0.0",
+    "PORT": "4200"
+  }
+}
