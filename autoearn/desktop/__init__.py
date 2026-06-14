@@ -1,0 +1,1 @@
+"""AutoEarn desktop application package."""

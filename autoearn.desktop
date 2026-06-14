@@ -1,0 +1,29 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=AutoEarn
+GenericName=AI Money-Making Organization
+Comment=Autonomous AI organization that generates revenue through content, affiliate marketing, and trading signals
+Exec=/bin/bash -c 'cd %k && ./autoearn.sh'
+Icon=%k/autoearn/desktop/assets/icon.svg
+Terminal=false
+StartupNotify=true
+StartupWMClass=AutoEarn
+Categories=Finance;Office;Utility;
+Keywords=ai;automation;revenue;agents;trading;affiliate;content;
+MimeType=
+Actions=headless;console;stop;
+
+[Desktop Action headless]
+Name=Start Headless (No Window)
+Exec=/bin/bash -c 'cd %k && ./autoearn.sh --no-gui'
+Icon=%k/autoearn/desktop/assets/icon.svg
+
+[Desktop Action console]
+Name=Start in Console Mode
+Exec=bash -c 'cd %k && ./autoearn.sh --cli; exec bash'
+Terminal=true
+
+[Desktop Action stop]
+Name=Stop AutoEarn
+Exec=/bin/bash -c 'cd %k && ./autoearn.sh --stop'

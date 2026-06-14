@@ -950,3 +950,228 @@ def _seo_add_redirect(agent: str, from_url: str = "", to_url: str = "", reason: 
 @tool("seo_orphan_pages", "seo_orphan_pages() — find pages with no internal links pointing to them.")
 def _seo_orphan_pages(agent: str, **_: Any) -> str:
     return _seo_opt.orphan_pages_tool()
+
+
+# --------------------------------------------------------------------------
+# Funnel builder tools
+# --------------------------------------------------------------------------
+from . import funnel_builder as _fb  # noqa: E402
+
+
+@tool("funnel_create", "funnel_create(name, funnel_type?, description?) — create a new sales funnel.")
+def _funnel_create(agent: str, name: str = "", funnel_type: str = "lead_gen", description: str = "", **_: Any) -> str:
+    return _fb.create_funnel_tool(name, funnel_type, description)
+
+
+@tool("funnel_add_step", "funnel_add_step(funnel_id, name, step_type?, url?, headline?, price?) — add a step to a funnel.")
+def _funnel_add_step(agent: str, funnel_id: int = 0, name: str = "", step_type: str = "optin", url: str = "", headline: str = "", price: float = 0.0, **_: Any) -> str:
+    return _fb.add_step_tool(funnel_id, name, step_type, url, headline, price)
+
+
+@tool("funnel_stats", "funnel_stats(funnel_id) — full analytics for a funnel including step conversion rates and revenue.")
+def _funnel_stats(agent: str, funnel_id: int = 0, **_: Any) -> str:
+    return _fb.funnel_stats_tool(funnel_id)
+
+
+@tool("funnel_list", "funnel_list(status?) — list all funnels, optionally filtered by status.")
+def _funnel_list(agent: str, status: str = "", **_: Any) -> str:
+    return _fb.list_funnels_tool(status)
+
+
+@tool("funnel_best", "funnel_best(limit?) — list best performing funnels by conversion rate.")
+def _funnel_best(agent: str, limit: int = 10, **_: Any) -> str:
+    return _fb.best_funnels_tool(limit)
+
+
+@tool("funnel_drop_off", "funnel_drop_off(funnel_id) — step-by-step drop-off analysis for a funnel.")
+def _funnel_drop_off(agent: str, funnel_id: int = 0, **_: Any) -> str:
+    return _fb.drop_off_tool(funnel_id)
+
+
+@tool("funnel_from_template", "funnel_from_template(template_name, funnel_name?) — build a funnel from a built-in template.")
+def _funnel_from_template(agent: str, template_name: str = "", funnel_name: str = "", **_: Any) -> str:
+    return _fb.template_tool(template_name, funnel_name)
+
+
+# --------------------------------------------------------------------------
+# Product manager tools
+# --------------------------------------------------------------------------
+from . import product_manager as _pm  # noqa: E402
+
+
+@tool("pm_create_product", "pm_create_product(name, product_type?, price?, description?, platform?) — add a product to the catalog.")
+def _pm_create_product(agent: str, name: str = "", product_type: str = "ebook", price: float = 0.0, description: str = "", platform: str = "", **_: Any) -> str:
+    return _pm.create_product_tool(name, product_type, price, description, platform)
+
+
+@tool("pm_record_sale", "pm_record_sale(product_id, amount, customer_email?, platform?, utm_source?, utm_campaign?) — record a product sale.")
+def _pm_record_sale(agent: str, product_id: int = 0, amount: float = 0.0, customer_email: str = "", platform: str = "", utm_source: str = "", utm_campaign: str = "", **_: Any) -> str:
+    return _pm.record_sale_tool(product_id, amount, customer_email, platform, utm_source, utm_campaign)
+
+
+@tool("pm_product_report", "pm_product_report(product_id, since?, until?) — revenue report for a specific product.")
+def _pm_product_report(agent: str, product_id: int = 0, since: str = "", until: str = "", **_: Any) -> str:
+    return _pm.product_report_tool(product_id, since, until)
+
+
+@tool("pm_best_sellers", "pm_best_sellers(limit?, metric?, since?) — top selling products by revenue or units.")
+def _pm_best_sellers(agent: str, limit: int = 10, metric: str = "revenue", since: str = "", **_: Any) -> str:
+    return _pm.best_sellers_tool(limit, metric, since)
+
+
+@tool("pm_catalog_summary", "pm_catalog_summary() — high-level product catalog summary with revenue totals.")
+def _pm_catalog_summary(agent: str, **_: Any) -> str:
+    return _pm.catalog_summary_tool()
+
+
+@tool("pm_list_products", "pm_list_products(status?, product_type?, limit?) — list all products with optional filters.")
+def _pm_list_products(agent: str, status: str = "", product_type: str = "", limit: int = 50, **_: Any) -> str:
+    return _pm.list_products_tool(status, product_type, limit)
+
+
+@tool("pm_add_review", "pm_add_review(product_id, rating, reviewer?, title?, body?) — add a customer review to a product.")
+def _pm_add_review(agent: str, product_id: int = 0, rating: int = 5, reviewer: str = "", title: str = "", body: str = "", **_: Any) -> str:
+    return _pm.add_review_tool(product_id, rating, reviewer, title, body)
+
+
+@tool("pm_utm_attribution", "pm_utm_attribution(since?) — revenue attribution by UTM source, medium, and campaign.")
+def _pm_utm_attribution(agent: str, since: str = "", **_: Any) -> str:
+    return _pm.utm_attribution_tool(since)
+
+
+# --------------------------------------------------------------------------
+# Link builder tools
+# --------------------------------------------------------------------------
+from . import link_builder as _lb  # noqa: E402
+
+
+@tool("lb_create_link", "lb_create_link(destination, utm_source?, utm_medium?, utm_campaign?, title?) — create a UTM tracked link.")
+def _lb_create_link(agent: str, destination: str = "", utm_source: str = "", utm_medium: str = "", utm_campaign: str = "", title: str = "", **_: Any) -> str:
+    return _lb.create_link_tool(destination, utm_source, utm_medium, utm_campaign, title)
+
+
+@tool("lb_campaign_performance", "lb_campaign_performance(campaign_name) — aggregate click stats for all links in a campaign.")
+def _lb_campaign_performance(agent: str, campaign_name: str = "", **_: Any) -> str:
+    return _lb.campaign_performance_tool(campaign_name)
+
+
+@tool("lb_top_links", "lb_top_links(limit?, since?) — highest-performing tracked links by clicks.")
+def _lb_top_links(agent: str, limit: int = 20, since: str = "", **_: Any) -> str:
+    return _lb.top_links_tool(limit, since)
+
+
+@tool("lb_create_short_link", "lb_create_short_link(long_url, title?) — shorten a URL.")
+def _lb_create_short_link(agent: str, long_url: str = "", title: str = "", **_: Any) -> str:
+    return _lb.create_short_link_tool(long_url, title)
+
+
+@tool("lb_create_bio_page", "lb_create_bio_page(handle, title?, bio?) — create a link-in-bio landing page.")
+def _lb_create_bio_page(agent: str, handle: str = "", title: str = "", bio: str = "", **_: Any) -> str:
+    return _lb.create_bio_page_tool(handle, title, bio)
+
+
+@tool("lb_add_bio_link", "lb_add_bio_link(handle, title, url, description?) — add a link to a link-in-bio page.")
+def _lb_add_bio_link(agent: str, handle: str = "", title: str = "", url: str = "", description: str = "", **_: Any) -> str:
+    return _lb.add_bio_link_tool(handle, title, url, description)
+
+
+@tool("lb_link_summary", "lb_link_summary() — overall link manager summary stats.")
+def _lb_link_summary(agent: str, **_: Any) -> str:
+    return _lb.link_summary_tool()
+
+
+@tool("lb_generate_utm", "lb_generate_utm(base_url, utm_source, utm_medium, utm_campaign, utm_content?) — build a UTM URL without database tracking.")
+def _lb_generate_utm(agent: str, base_url: str = "", utm_source: str = "", utm_medium: str = "", utm_campaign: str = "", utm_content: str = "", **_: Any) -> str:
+    return _lb.generate_utm_tool(base_url, utm_source, utm_medium, utm_campaign, utm_content)
+
+
+@tool("lb_bulk_create_links", "lb_bulk_create_links(destination, sources, medium?, campaign?) — create one tracked link per UTM source.")
+def _lb_bulk_create_links(agent: str, destination: str = "", sources: str = "", medium: str = "social", campaign: str = "", **_: Any) -> str:
+    return _lb.bulk_create_links_tool(destination, sources, medium, campaign)
+
+
+# --------------------------------------------------------------------------
+# Reporting engine tools
+# --------------------------------------------------------------------------
+from . import reporting_engine as _rpt  # noqa: E402
+
+
+@tool("rpt_create_report", "rpt_create_report(name, report_type?, frequency?, output_format?, description?) — register a new scheduled report.")
+def _rpt_create_report(agent: str, name: str = "", report_type: str = "executive_summary", frequency: str = "weekly", output_format: str = "markdown", description: str = "", **_: Any) -> str:
+    return _rpt.create_report_tool(name, report_type, frequency, output_format, description)
+
+
+@tool("rpt_run_report", "rpt_run_report(report_name, output_format?) — execute a report immediately.")
+def _rpt_run_report(agent: str, report_name: str = "", output_format: str = "", **_: Any) -> str:
+    return _rpt.run_report_tool(report_name, output_format)
+
+
+@tool("rpt_adhoc_report", "rpt_adhoc_report(report_type?, output_format?, title?) — generate a one-off report.")
+def _rpt_adhoc_report(agent: str, report_type: str = "executive_summary", output_format: str = "markdown", title: str = "", **_: Any) -> str:
+    return _rpt.adhoc_report_tool(report_type, output_format, title)
+
+
+@tool("rpt_list_reports", "rpt_list_reports() — list all defined reports and their schedule.")
+def _rpt_list_reports(agent: str, **_: Any) -> str:
+    return _rpt.list_reports_tool()
+
+
+@tool("rpt_run_history", "rpt_run_history(report_name?, limit?) — recent report execution history.")
+def _rpt_run_history(agent: str, report_name: str = "", limit: int = 20, **_: Any) -> str:
+    return _rpt.run_history_tool(report_name, limit)
+
+
+@tool("rpt_get_content", "rpt_get_content(run_ref) — retrieve full content of a past report run.")
+def _rpt_get_content(agent: str, run_ref: str = "", **_: Any) -> str:
+    return _rpt.get_content_tool(run_ref)
+
+
+@tool("rpt_seed_defaults", "rpt_seed_defaults() — create the default set of scheduled reports.")
+def _rpt_seed_defaults(agent: str, **_: Any) -> str:
+    return _rpt.seed_defaults_tool()
+
+
+# --------------------------------------------------------------------------
+# Pricing engine tools
+# --------------------------------------------------------------------------
+from . import pricing_engine as _pe  # noqa: E402
+
+
+@tool("pe_create_rule", "pe_create_rule(name, base_price, pricing_model?, billing_interval?, product_id?) — create a pricing rule.")
+def _pe_create_rule(agent: str, name: str = "", base_price: float = 0.0, pricing_model: str = "flat", billing_interval: str = "once", product_id: int = 0, **_: Any) -> str:
+    return _pe.create_rule_tool(name, base_price, pricing_model, billing_interval, product_id)
+
+
+@tool("pe_resolve_price", "pe_resolve_price(product_id, quantity?, coupon_code?) — determine the correct price given context.")
+def _pe_resolve_price(agent: str, product_id: int = 0, quantity: float = 1.0, coupon_code: str = "", **_: Any) -> str:
+    return _pe.resolve_price_tool(product_id, quantity, coupon_code)
+
+
+@tool("pe_create_price_test", "pe_create_price_test(name, variant_a_price, variant_b_price, product_id?) — start an A/B price test.")
+def _pe_create_price_test(agent: str, name: str = "", variant_a_price: float = 0.0, variant_b_price: float = 0.0, product_id: int = 0, **_: Any) -> str:
+    return _pe.create_price_test_tool(name, variant_a_price, variant_b_price, product_id)
+
+
+@tool("pe_analyze_price_test", "pe_analyze_price_test(test_name) — statistical analysis of a running price test.")
+def _pe_analyze_price_test(agent: str, test_name: str = "", **_: Any) -> str:
+    return _pe.analyze_test_tool(test_name)
+
+
+@tool("pe_recommend_price", "pe_recommend_price(product_id, segment?) — get price recommendations based on LTV and historical data.")
+def _pe_recommend_price(agent: str, product_id: int = 0, segment: str = "default", **_: Any) -> str:
+    return _pe.recommend_price_tool(product_id, segment)
+
+
+@tool("pe_create_discount", "pe_create_discount(name, discount_type?, discount_value?, end_at?, usage_limit?) — create a discount rule.")
+def _pe_create_discount(agent: str, name: str = "", discount_type: str = "percent", discount_value: float = 10.0, end_at: str = "", usage_limit: int = 0, **_: Any) -> str:
+    return _pe.create_discount_tool(name, discount_type, discount_value, end_at, usage_limit)
+
+
+@tool("pe_pricing_summary", "pe_pricing_summary() — overview of all pricing rules, A/B tests, and discounts.")
+def _pe_pricing_summary(agent: str, **_: Any) -> str:
+    return _pe.pricing_summary_tool()
+
+
+@tool("pe_upsert_ltv", "pe_upsert_ltv(segment, avg_ltv, avg_order_value?, churn_rate?, acquisition_cost?) — update LTV estimate for a customer segment.")
+def _pe_upsert_ltv(agent: str, segment: str = "", avg_ltv: float = 0.0, avg_order_value: float = 0.0, churn_rate: float = 0.0, acquisition_cost: float = 0.0, **_: Any) -> str:
+    return _pe.upsert_ltv_tool(segment, avg_ltv, avg_order_value, churn_rate, acquisition_cost)
