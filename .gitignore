@@ -13,3 +13,7 @@ venv/
 *.db-wal
 *.db-shm
 output/
+# AutoEarn desktop-app runtime files
+.autoearn.log
+.autoearn.pid
+logs/
