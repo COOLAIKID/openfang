@@ -1077,21 +1077,24 @@ def recommend_price(
         ).fetchone()
         ltv = dict(ltv_row) if ltv_row else {"avg_ltv": 0, "avg_order_value": 0}
 
-        # Historical conversion data
-        hist = conn.execute(
-            """SELECT
-                   COUNT(*) as sales,
-                   AVG(amount) as avg_amount,
-                   MIN(amount) as min_amount,
-                   MAX(amount) as max_amount
-               FROM product_sales
-               WHERE product_id = ? AND status = 'completed'""",
-            (product_id,),
-        ).fetchone()
+        # Historical conversion data (product_sales is owned by product_manager)
+        try:
+            hist = conn.execute(
+                """SELECT
+                       COUNT(*) as sales,
+                       AVG(amount) as avg_amount,
+                       MIN(amount) as min_amount,
+                       MAX(amount) as max_amount
+                   FROM product_sales
+                   WHERE product_id = ? AND status = 'completed'""",
+                (product_id,),
+            ).fetchone()
+        except Exception:
+            hist = None
     finally:
         conn.close()
 
-    avg_amount = hist["avg_amount"] or 0.0
+    avg_amount = (hist["avg_amount"] or 0.0) if hist else 0.0
     ltv_value = ltv.get("avg_ltv", 0.0)
 
     # Recommendation heuristics
@@ -1118,10 +1121,10 @@ def recommend_price(
         "product_id": product_id,
         "segment": segment,
         "historical": {
-            "total_sales": hist["sales"] or 0,
+            "total_sales": (hist["sales"] or 0) if hist else 0,
             "avg_price": round(avg_amount, 2),
-            "min_price": hist["min_amount"] or 0.0,
-            "max_price": hist["max_amount"] or 0.0,
+            "min_price": (hist["min_amount"] or 0.0) if hist else 0.0,
+            "max_price": (hist["max_amount"] or 0.0) if hist else 0.0,
         },
         "ltv": ltv,
         "suggestions": suggestions,

@@ -371,6 +371,9 @@ def create_link(
     _ensure()
     now = datetime.utcnow().isoformat()
     final_slug = slug or _gen_slug()
+    # Inherit campaign_name from utm_campaign if not explicitly set
+    if not campaign_name and utm_campaign:
+        campaign_name = utm_campaign
 
     conn = _db()
     try:
@@ -456,8 +459,8 @@ def list_links(
         clauses.append("status = ?")
         params.append(status)
     if campaign_name:
-        clauses.append("campaign_name = ?")
-        params.append(campaign_name)
+        clauses.append("(campaign_name = ? OR utm_campaign = ?)")
+        params.extend([campaign_name, campaign_name])
     if utm_source:
         clauses.append("utm_source = ?")
         params.append(utm_source)

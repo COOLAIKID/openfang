@@ -9,7 +9,8 @@ from datetime import datetime, timedelta
 @pytest.fixture(autouse=True)
 def _isolated_db(tmp_path, monkeypatch):
     db_path = tmp_path / "test.db"
-    monkeypatch.setattr("autoearn.core.database.get_db_path", lambda: str(db_path))
+    # Patch the local reference held by email_marketing after its from-import
+    monkeypatch.setattr("autoearn.core.email_marketing.get_db_path", lambda: str(db_path))
     # Reset schema flag so each test starts fresh
     import autoearn.core.email_marketing as em
     em._schema_ready = False

@@ -439,11 +439,17 @@ def create_segment(
     name: str,
     description: str = "",
     condition: str = "all_subscribers",
+    conditions_json: str = "",
     params: Optional[Dict[str, Any]] = None,
     is_dynamic: bool = True,
-) -> EmailSegment:
-    """Create a subscriber segment."""
+) -> Dict[str, Any]:
+    """Create a subscriber segment. Returns a dict."""
     _ensure()
+    if conditions_json and not params:
+        try:
+            params = json.loads(conditions_json)
+        except Exception:
+            pass
     now = datetime.utcnow().isoformat()
     conn = _db()
     try:
@@ -454,7 +460,7 @@ def create_segment(
             (name, description, condition, json.dumps(params or {}), int(is_dynamic), now),
         )
         conn.commit()
-        return EmailSegment(
+        seg = EmailSegment(
             id=cur.lastrowid,
             name=name,
             description=description,
@@ -463,6 +469,7 @@ def create_segment(
             is_dynamic=is_dynamic,
             created_at=now,
         )
+        return seg.to_dict()
     except sqlite3.IntegrityError:
         raise ValueError(f"Segment '{name}' already exists")
     finally:
@@ -480,13 +487,13 @@ def get_segment(name: str) -> Optional[EmailSegment]:
         conn.close()
 
 
-def list_segments() -> List[EmailSegment]:
-    """List all segments."""
+def list_segments() -> List[Dict[str, Any]]:
+    """List all segments as dicts."""
     _ensure()
     conn = _db()
     try:
         rows = conn.execute("SELECT * FROM email_segments ORDER BY name").fetchall()
-        return [_segment_from_row(r) for r in rows]
+        return [_segment_from_row(r).to_dict() for r in rows]
     finally:
         conn.close()
 
@@ -625,12 +632,12 @@ def update_campaign(campaign_id: int, **kwargs) -> bool:
     set_clause = ", ".join(f"{k} = ?" for k in updates)
     conn = _db()
     try:
-        conn.execute(
+        cur = conn.execute(
             f"UPDATE email_campaigns SET {set_clause} WHERE id = ?",
             (*updates.values(), campaign_id),
         )
         conn.commit()
-        return True
+        return cur.rowcount > 0
     finally:
         conn.close()
 
@@ -640,20 +647,20 @@ def schedule_campaign(campaign_id: int, send_at: str) -> bool:
     return update_campaign(campaign_id, status="scheduled", scheduled_at=send_at)
 
 
-def mark_campaign_sent(campaign_id: int, total_sent: int) -> bool:
+def mark_campaign_sent(campaign_id: int, total_sent: int = 0) -> bool:
     """Mark a campaign as sent with recipient count."""
     _ensure()
     now = datetime.utcnow().isoformat()
     conn = _db()
     try:
-        conn.execute(
+        cur = conn.execute(
             """UPDATE email_campaigns
                SET status = 'sent', sent_at = ?, total_sent = ?, updated_at = ?
                WHERE id = ?""",
             (now, total_sent, now, campaign_id),
         )
         conn.commit()
-        return True
+        return cur.rowcount > 0
     finally:
         conn.close()
 
@@ -663,12 +670,12 @@ def delete_campaign(campaign_id: int) -> bool:
     _ensure()
     conn = _db()
     try:
-        conn.execute(
+        cur = conn.execute(
             "DELETE FROM email_campaigns WHERE id = ? AND status = 'draft'",
             (campaign_id,),
         )
         conn.commit()
-        return True
+        return cur.rowcount > 0
     finally:
         conn.close()
 
@@ -821,18 +828,29 @@ def list_sequences(active_only: bool = True) -> List[EmailSequence]:
 
 
 def add_sequence_email(
-    sequence_name: str,
-    step_number: int,
-    subject: str,
+    sequence_name,
+    step_number: int = 1,
+    subject: str = "",
     body_html: str = "",
     body_text: str = "",
+    body: str = "",
     preview_text: str = "",
     delay_hours: int = 24,
     send_condition: str = "always",
 ) -> Dict[str, Any]:
-    """Add an email step to a sequence."""
+    """Add an email step to a sequence. Accepts sequence name or id."""
     _ensure()
-    seq = get_sequence(sequence_name)
+    body_html = body_html or body
+    seq = get_sequence(sequence_name) if isinstance(sequence_name, str) else None
+    if seq is None:
+        # Try lookup by id
+        conn = _db()
+        try:
+            row = conn.execute("SELECT * FROM email_sequences WHERE id=?", (sequence_name,)).fetchone()
+            if row:
+                seq = _sequence_from_row(row)
+        finally:
+            conn.close()
     if not seq:
         raise ValueError(f"Sequence '{sequence_name}' not found")
     now = datetime.utcnow().isoformat()
@@ -859,13 +877,21 @@ def add_sequence_email(
 
 
 def enroll_subscriber(
-    sequence_name: str,
+    sequence_name,
     subscriber_email: str,
     start_at: Optional[str] = None,
 ) -> Dict[str, Any]:
-    """Enroll a subscriber in a sequence."""
+    """Enroll a subscriber in a sequence. Accepts sequence name or id."""
     _ensure()
-    seq = get_sequence(sequence_name)
+    seq = get_sequence(sequence_name) if isinstance(sequence_name, str) else None
+    if seq is None:
+        conn = _db()
+        try:
+            row = conn.execute("SELECT * FROM email_sequences WHERE id=?", (sequence_name,)).fetchone()
+            if row:
+                seq = _sequence_from_row(row)
+        finally:
+            conn.close()
     if not seq:
         raise ValueError(f"Sequence '{sequence_name}' not found")
     if not seq.is_active:
@@ -986,22 +1012,30 @@ def advance_enrollment(enrollment_id: int) -> Dict[str, Any]:
         conn.close()
 
 
-def unenroll_subscriber(sequence_name: str, subscriber_email: str) -> bool:
-    """Remove a subscriber from a sequence."""
+def unenroll_subscriber(sequence_name, subscriber_email: str) -> bool:
+    """Remove a subscriber from a sequence. Accepts name or id."""
     _ensure()
-    seq = get_sequence(sequence_name)
+    seq = get_sequence(sequence_name) if isinstance(sequence_name, str) else None
+    if seq is None:
+        conn2 = _db()
+        try:
+            row = conn2.execute("SELECT * FROM email_sequences WHERE id=?", (sequence_name,)).fetchone()
+            if row:
+                seq = _sequence_from_row(row)
+        finally:
+            conn2.close()
     if not seq:
         return False
     conn = _db()
     try:
-        conn.execute(
+        cur = conn.execute(
             """UPDATE sequence_enrollments
                SET status = 'unsubscribed', unsubscribed_at = ?
                WHERE sequence_id = ? AND subscriber_email = ? AND status = 'active'""",
             (datetime.utcnow().isoformat(), seq.id, subscriber_email),
         )
         conn.commit()
-        return True
+        return cur.rowcount > 0
     finally:
         conn.close()
 
@@ -1059,7 +1093,7 @@ def list_automations(active_only: bool = True) -> List[Dict[str, Any]]:
         conn.close()
 
 
-def fire_automation(trigger_event: str, context: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
+def fire_automation(trigger_event: str, subscriber_email: str = "", context: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
     """Find and queue automations matching a trigger event."""
     _ensure()
     conn = _db()
@@ -1199,8 +1233,11 @@ def campaign_analytics(campaign_id: int) -> Dict[str, Any]:
                GROUP BY link_url ORDER BY clicks DESC LIMIT 10""",
             (campaign_id,),
         ).fetchall()
+        camp_dict = camp.to_dict()
         return {
-            "campaign": camp.to_dict(),
+            "campaign": camp_dict,
+            "open_rate": camp_dict.get("open_rate", 0.0),
+            "click_rate": camp_dict.get("click_rate", 0.0),
             "hourly_activity": [dict(r) for r in hourly],
             "top_links": [dict(r) for r in top_links],
         }
@@ -1426,15 +1463,16 @@ def record_event_tool(
     event_type: str,
     subscriber_email: str,
     campaign_name: str = "",
+    campaign_id: int = 0,
     link_url: str = "",
 ) -> str:
     try:
-        campaign_id = None
-        if campaign_name:
+        cid = campaign_id or None
+        if not cid and campaign_name:
             camp = get_campaign(campaign_name)
             if camp:
-                campaign_id = camp.id
-        record_event(event_type, subscriber_email, campaign_id=campaign_id, link_url=link_url)
+                cid = camp.id
+        record_event(event_type, subscriber_email, campaign_id=cid, link_url=link_url)
         return json.dumps({"ok": True})
     except Exception as exc:
         return json.dumps({"ok": False, "error": str(exc)})
