@@ -74,6 +74,11 @@ CREATE INDEX IF NOT EXISTS idx_activity_agent ON activity(agent);
 """
 
 
+def get_db_path() -> Path:
+    """Return the path to the shared SQLite database file."""
+    return DB_PATH
+
+
 def _connect() -> sqlite3.Connection:
     conn = sqlite3.connect(DB_PATH, timeout=30)
     conn.row_factory = sqlite3.Row
