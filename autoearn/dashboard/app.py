@@ -176,6 +176,12 @@ def create_app(orchestrator) -> FastAPI:
     def logs(limit: int = 60) -> list[dict]:
         return db.recent_activity(limit=limit)
 
+    @app.get("/api/tasks")
+    def tasks(limit: int = 40) -> list[dict]:
+        """Real-time feed of what each worker is doing / has done."""
+        db.cleanup_stale_tasks()
+        return db.recent_tasks(limit=limit)
+
     @app.post("/api/agents/{name}/trigger")
     def trigger(name: str) -> dict:
         if manager.get(name) is None:

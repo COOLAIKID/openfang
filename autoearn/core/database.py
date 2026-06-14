@@ -69,8 +69,21 @@ CREATE TABLE IF NOT EXISTS chat (
     created_at REAL NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS tasks (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    agent      TEXT NOT NULL,
+    tool       TEXT,
+    title      TEXT NOT NULL,        -- human friendly, present then past tense
+    detail     TEXT,                 -- why / what (one sentence)
+    status     TEXT NOT NULL DEFAULT 'running',  -- running | done | error
+    result     TEXT,
+    started_at REAL NOT NULL,
+    ended_at   REAL
+);
+
 CREATE INDEX IF NOT EXISTS idx_messages_to ON messages(to_agent, status);
 CREATE INDEX IF NOT EXISTS idx_activity_agent ON activity(agent);
+CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status);
 """
 
 
@@ -129,6 +142,62 @@ def recent_activity(limit: int = 50, agent: str | None = None) -> list[dict[str,
                 "SELECT * FROM activity ORDER BY id DESC LIMIT ?", (limit,)
             ).fetchall()
     return [dict(r) for r in rows]
+
+
+# --------------------------------------------------------------------------
+# Tasks — real-time "what is each agent doing" timeline
+# --------------------------------------------------------------------------
+def start_task(agent: str, tool: str, title: str, detail: str = "") -> int:
+    """Record a task the agent just started. Returns its id so it can be finished."""
+    init()
+    with _connect() as conn:
+        cur = conn.execute(
+            "INSERT INTO tasks (agent, tool, title, detail, status, started_at) "
+            "VALUES (?,?,?,?, 'running', ?)",
+            (agent, tool, title, detail, _now()),
+        )
+        return int(cur.lastrowid)
+
+
+def finish_task(task_id: int, status: str, title: str | None = None, result: str = "") -> None:
+    """Mark a task done/error. Optionally rewrite the title to past tense."""
+    init()
+    with _connect() as conn:
+        if title is not None:
+            conn.execute(
+                "UPDATE tasks SET status=?, title=?, result=?, ended_at=? WHERE id=?",
+                (status, title, result, _now(), task_id),
+            )
+        else:
+            conn.execute(
+                "UPDATE tasks SET status=?, result=?, ended_at=? WHERE id=?",
+                (status, result, _now(), task_id),
+            )
+
+
+def recent_tasks(limit: int = 40, agent: str | None = None) -> list[dict[str, Any]]:
+    init()
+    with _connect() as conn:
+        if agent:
+            rows = conn.execute(
+                "SELECT * FROM tasks WHERE agent=? ORDER BY id DESC LIMIT ?", (agent, limit)
+            ).fetchall()
+        else:
+            rows = conn.execute(
+                "SELECT * FROM tasks ORDER BY id DESC LIMIT ?", (limit,)
+            ).fetchall()
+    return [dict(r) for r in rows]
+
+
+def cleanup_stale_tasks(max_age_seconds: float = 1800) -> None:
+    """Mark long-running 'running' tasks as done (e.g. after a crash/restart)."""
+    init()
+    cutoff = _now() - max_age_seconds
+    with _connect() as conn:
+        conn.execute(
+            "UPDATE tasks SET status='done', ended_at=? WHERE status='running' AND started_at < ?",
+            (_now(), cutoff),
+        )
 
 
 # --------------------------------------------------------------------------

@@ -25,6 +25,54 @@ from . import ai_client, database as db, message_bus, tools
 ROOT = Path(__file__).resolve().parent.parent
 
 
+# Plain-English (present, past) phrasing for each tool, so the live feed reads
+# like "Writing an article…" → "Wrote an article". Anything unknown falls back
+# to a sensible generic phrasing built from the tool name.
+_TASK_PHRASES: dict[str, tuple[str, str]] = {
+    "web_search":        ("Searching the web", "Searched the web"),
+    "fetch_url":         ("Reading a web page", "Read a web page"),
+    "fetch_prices":      ("Checking market prices", "Checked market prices"),
+    "save_output":       ("Creating a file", "Created a file"),
+    "publish_wordpress": ("Publishing an article", "Published an article"),
+    "publish_medium":    ("Publishing to Medium", "Published to Medium"),
+    "post_telegram":     ("Posting to Telegram", "Posted to Telegram"),
+    "post_reddit":       ("Posting to Reddit", "Posted to Reddit"),
+    "http_request":      ("Calling a web service", "Called a web service"),
+    "log_revenue":       ("Recording earnings", "Recorded earnings 💰"),
+    "send_message":      ("Messaging a teammate", "Messaged a teammate"),
+    "get_messages":      ("Checking messages", "Checked messages"),
+    "spawn_agent":       ("Creating a new worker", "Created a new worker"),
+    "kill_agent":        ("Retiring a worker", "Retired a worker"),
+    "set_budget":        ("Adjusting a budget", "Adjusted a budget"),
+}
+
+
+def _task_titles(tool_name: str, args: dict[str, Any]) -> tuple[str, str]:
+    """Return (present, past) friendly titles for a tool action.
+
+    Self-improvement tools (``update_*``) are summarised as the worker improving
+    itself, which is exactly the "tasks the AI makes for itself" idea.
+    """
+    if tool_name in _TASK_PHRASES:
+        present, past = _TASK_PHRASES[tool_name]
+    elif tool_name.startswith("update_"):
+        present, past = ("Improving itself", "Improved itself")
+    else:
+        nice = tool_name.replace("_", " ")
+        present, past = (f"Working on {nice}", f"Finished {nice}")
+
+    # Add a short hint from the args when one is obviously useful.
+    hint = ""
+    for key in ("title", "query", "subject", "filename", "to", "symbols", "url", "source"):
+        if isinstance(args, dict) and args.get(key):
+            hint = str(args[key])[:48]
+            break
+    if hint:
+        present = f"{present}: {hint}"
+        past = f"{past}: {hint}"
+    return present, past
+
+
 class Agent:
     def __init__(self, path: Path, definition: dict[str, Any]):
         self.path = path
@@ -87,7 +135,9 @@ class Agent:
             observation = self._observe()
             action = self._reason(observation)
             self._log_plan(action)          # announce intention before acting
+            task_id = self._start_task(action)   # live "doing…" entry
             result = self._act(action)
+            self._finish_task(task_id, action, result)  # flip to done/error
             self._reflect(observation, action, result)
             summary = f"{action.get('tool', 'noop')} -> {result[:160]}"
             db.record_run(self.name, summary, error=result.startswith("ERROR"))
@@ -173,6 +223,27 @@ If no useful action exists, use {{"tool": "noop", "args": {{}}}}."""
                 detail += f"  [{reasoning}]"
 
         db.log_activity(self.name, "plan", detail[:500])
+
+    # ------------------------------------------------------------------
+    # Phase 2.6 — live task tracking (real-time "doing… → done")
+    # ------------------------------------------------------------------
+    def _start_task(self, action: dict[str, Any]) -> int | None:
+        tool_name = action.get("tool", "noop")
+        if tool_name == "noop":
+            return None
+        present, _ = _task_titles(tool_name, action.get("args") or {})
+        reasoning = (action.get("reasoning") or "").strip()
+        return db.start_task(self.name, tool_name, present, reasoning[:200])
+
+    def _finish_task(self, task_id: int | None, action: dict[str, Any], result: str) -> None:
+        if task_id is None:
+            return
+        tool_name = action.get("tool", "noop")
+        _, past = _task_titles(tool_name, action.get("args") or {})
+        if result.startswith("ERROR"):
+            db.finish_task(task_id, "error", title=past, result=result[:300])
+        else:
+            db.finish_task(task_id, "done", title=past, result=str(result)[:300])
 
     # ------------------------------------------------------------------
     # Phase 3 — act

@@ -585,6 +585,53 @@
     .feed-item.error-entry .feed-ico  { color: var(--warn); }
     .feed-time { font-size: 10.5px; color: var(--mut); flex-shrink: 0; margin-top: 2px; }
 
+    /* ── Live activity timeline ───────────────────────────────────────── */
+    .live-pill {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 10.5px; font-weight: 700; letter-spacing: .04em;
+      color: var(--acc2); background: rgba(27,211,154,.10);
+      border: 1px solid rgba(27,211,154,.22); border-radius: 999px;
+      padding: 3px 9px; text-transform: uppercase;
+    }
+    .live-pill-dot {
+      width: 7px; height: 7px; border-radius: 50%; background: var(--acc2);
+      animation: pulse-dot 1.4s infinite;
+    }
+    .live-count {
+      margin-left: auto; font-size: 11px; font-weight: 600; color: var(--acc2);
+      text-transform: none; letter-spacing: 0;
+    }
+    .timeline { padding: 6px 0; }
+    .tl-item {
+      display: flex; gap: 12px; padding: 11px 16px;
+      animation: fadeUp .35s ease both;
+    }
+    .tl-rail { display: flex; flex-direction: column; align-items: center; flex-shrink: 0; }
+    .tl-dot {
+      width: 24px; height: 24px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 800; flex-shrink: 0;
+      border: 1.5px solid var(--line); background: var(--panel2); color: var(--mut);
+      transition: all .3s ease;
+    }
+    .tl-dot.running { border-color: var(--acc); background: rgba(16,163,127,.12); }
+    .tl-dot.done    { border-color: var(--acc2); background: rgba(27,211,154,.16); color: var(--acc2); }
+    .tl-dot.error   { border-color: var(--warn); background: rgba(248,113,113,.14); color: var(--warn); }
+    .tl-spin {
+      width: 12px; height: 12px; border-radius: 50%;
+      border: 2px solid rgba(27,211,154,.25); border-top-color: var(--acc2);
+      animation: spin .8s linear infinite;
+    }
+    .tl-body { flex: 1; min-width: 0; }
+    .tl-top { display: flex; align-items: baseline; gap: 8px; }
+    .tl-who { font-weight: 600; font-size: 13px; color: var(--txt); }
+    .tl-time { font-size: 10.5px; color: var(--mut); margin-left: auto; flex-shrink: 0; }
+    .tl-title { font-size: 13.5px; color: var(--txt); margin-top: 1px; }
+    .tl-item.running .tl-title { color: var(--acc2); }
+    .tl-item.error   .tl-title { color: var(--warn); }
+    .tl-detail { font-size: 11.5px; color: var(--mut); margin-top: 3px; font-style: italic; }
+    .tl-result { font-size: 11.5px; color: var(--warn); margin-top: 3px; word-break: break-word; }
+
     /* Message thread */
     .msg-item {
       padding: 10px 16px;
@@ -1446,24 +1493,38 @@
           </div>
         </div>
 
-        <!-- Live feed -->
+        <!-- Live activity — real-time "doing… → done" timeline -->
         <div class="card">
           <div class="card-hd">
-            📡 Live feed
-            <span style="font-size:10px;color:var(--mut);font-weight:400;text-transform:none;letter-spacing:0;margin-left:auto">updates every 5s</span>
+            <span class="live-pill"><span class="live-pill-dot"></span>Live</span>
+            What your team is doing
+            <span x-show="workingNow>0" class="live-count" x-text="workingNow+' working now'"></span>
           </div>
-          <template x-for="l in logs" :key="l.id">
-            <div class="feed-item" :class="feedItemClass(l)">
-              <span class="feed-ico" x-text="feedIcon(l)"></span>
-              <div class="feed-body">
-                <span class="feed-who" x-text="workerLabel(l.agent)"></span>
-                <div class="feed-what" x-text="friendlyActivity(l)"></div>
+          <div class="timeline">
+            <template x-for="t in tasks" :key="t.id">
+              <div class="tl-item" :class="t.status">
+                <div class="tl-rail">
+                  <span class="tl-dot" :class="t.status">
+                    <span x-show="t.status==='running'" class="tl-spin"></span>
+                    <span x-show="t.status==='done'">✓</span>
+                    <span x-show="t.status==='error'">!</span>
+                  </span>
+                </div>
+                <div class="tl-body">
+                  <div class="tl-top">
+                    <span class="tl-who" x-text="workerLabel(t.agent)"></span>
+                    <span class="tl-time" x-text="taskTime(t)"></span>
+                  </div>
+                  <div class="tl-title" x-text="t.title"></div>
+                  <div class="tl-detail" x-show="t.detail" x-text="t.detail"></div>
+                  <div class="tl-result" x-show="t.status==='error'&&t.result" x-text="t.result"></div>
+                </div>
               </div>
-            </div>
-          </template>
-          <div class="empty-state" style="padding:28px" x-show="!logs.length">
+            </template>
+          </div>
+          <div class="empty-state" style="padding:28px" x-show="!tasks.length">
             <div class="es-ico" style="font-size:28px">💤</div>
-            <p>No activity yet — your team will appear here once they start working.</p>
+            <p>Nothing yet — the moment your team starts working, every step shows up here in real time.</p>
           </div>
         </div>
 
@@ -1755,6 +1816,26 @@
             <div style="font-size:13px;color:var(--teal);font-style:italic;background:rgba(45,212,191,.06);border-radius:8px;padding:10px 12px;" x-text="agentPlan(selected.name)"></div>
           </div>
 
+          <div x-show="agentTasks(selected.name).length" style="margin-bottom:14px;">
+            <div style="font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Recent work</div>
+            <div class="timeline" style="padding:0;">
+              <template x-for="t in agentTasks(selected.name)" :key="t.id">
+                <div class="tl-item" :class="t.status" style="padding:8px 0;">
+                  <div class="tl-rail">
+                    <span class="tl-dot" :class="t.status">
+                      <span x-show="t.status==='running'" class="tl-spin"></span>
+                      <span x-show="t.status==='done'">✓</span>
+                      <span x-show="t.status==='error'">!</span>
+                    </span>
+                  </div>
+                  <div class="tl-body">
+                    <div class="tl-top"><span class="tl-title" x-text="t.title"></span><span class="tl-time" x-text="taskTime(t)"></span></div>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </div>
+
           <div x-show="selected.last_result" style="margin-bottom:14px;">
             <div style="font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Last action result</div>
             <pre x-text="selected.last_result"></pre>
@@ -1822,6 +1903,7 @@
       urlCopied: false,
       showWelcome: false,
       authEnabled: false,
+      tasks: [],
 
       /* ── Computed ── */
       get activeWorkers() {
@@ -1831,15 +1913,40 @@
           return (a.runs||0) > 0 || !!this.agentPlan(a.name);
         }).length;
       },
+      get workingNow() {
+        return this.tasks.filter(t => t.status === 'running').length;
+      },
 
       /* ── Init ── */
       init() {
         fetch('/api/auth').then(x => x.json()).then(d => this.authEnabled = !!d.enabled).catch(() => {});
         this.refresh();
+        this.loadTasks();
         this.loadChat();
         this.loadSkills();
         this.loadNetwork();
         setInterval(() => this.refresh(), 5000);
+        // Faster poll just for the live timeline so "doing → done" feels instant.
+        setInterval(() => this.loadTasks(), 2000);
+      },
+
+      async loadTasks() {
+        this.tasks = await fetch('/api/tasks?limit=40').then(x => x.json()).catch(() => this.tasks);
+      },
+
+      taskTime(t) {
+        const ts = (t.status === 'running') ? t.started_at : (t.ended_at || t.started_at);
+        if (t.status === 'running') return 'working now';
+        return this.relTime(ts);
+      },
+      relTime(sec) {
+        if (!sec) return '';
+        const d = Math.max(0, Date.now() / 1000 - sec);
+        if (d < 5)   return 'just now';
+        if (d < 60)  return Math.floor(d) + 's ago';
+        if (d < 3600) return Math.floor(d / 60) + 'm ago';
+        if (d < 86400) return Math.floor(d / 3600) + 'h ago';
+        return Math.floor(d / 86400) + 'd ago';
       },
 
       async signOut() {
@@ -2021,12 +2128,19 @@
 
       /* ── Agent plan ── */
       agentPlan(name) {
+        // Prefer a live, in-progress task ("Creating a file…") if one exists.
+        const live = this.tasks.find(t => t.agent === name && t.status === 'running');
+        if (live) return live.title;
         const e = this.logs.find(l => l.agent === name && l.action === 'plan');
         if (!e) return '';
         const d = (e.detail||'');
         if (d.startsWith('No action')) return '';
         const r = d.replace(/^→\s*\S+\s*/,'').replace(/^\[(.+)\]$/,'$1').replace(/\[(.+?)\]/,'$1');
         return r.slice(0,80);
+      },
+
+      agentTasks(name) {
+        return this.tasks.filter(t => t.agent === name).slice(0, 8);
       },
 
       /* ── Workspace helpers ── */
