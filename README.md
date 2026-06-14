@@ -26,17 +26,27 @@ even opens (showing the last data) when you have no signal.
 
 👉 Full walkthrough with pictures of each step: **[RUN_ON_YOUR_PHONE.md](RUN_ON_YOUR_PHONE.md)**
 
-### 💻 On your computer
+### 💻 On your computer (a real app icon)
+
+Install it once and you get an **AutoEarn icon** in your Applications / Start
+Menu. Click it and the dashboard opens in your browser — that's it.
 
 ```bash
 git clone https://github.com/coolaikid/openfang
 cd openfang
-GROQ_API_KEY=your_key_here ./autoearn.sh --no-gui
+./install-app.sh          # macOS / Linux
 ```
 
-Then open **<http://localhost:4200>** in your browser. (On Windows, double-click
-`autoearn.bat`.) No password is needed for local use; set `AUTOEARN_PASSWORD`
-first if you want a sign-in prompt.
+On **Windows**, run this in PowerShell instead:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File install-app.ps1
+```
+
+Now find **AutoEarn** in your apps and click it. The first click sets things up
+(~1 minute), then the dashboard opens automatically — and every click after is
+instant. No password is needed for local use; set `AUTOEARN_PASSWORD` first if
+you want a sign-in prompt.
 
 > **Want it on your phone over home Wi-Fi instead of the cloud?** Run the command
 > above, then open `http://<your-computer-ip>:4200` on your phone — same app.
