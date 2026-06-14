@@ -1,0 +1,245 @@
+# AutoEarn — one container per agent, plus a dashboard service.
+#
+# Usage:
+#   docker compose up -d              # start everything
+#   docker compose logs -f ceo        # tail one agent
+#   docker compose logs -f            # tail all agents
+#   docker compose restart writer     # restart a single agent
+#   docker compose down               # stop everything (data in volumes is kept)
+#   docker compose down -v            # stop + delete DB/output volumes
+#
+# Each agent container:
+#   - Runs its ORAR loop forever (restart: always guarantees recovery from crashes)
+#   - Has its own isolated Linux filesystem (/workspace, /tmp, etc.)
+#   - Shares two volumes with every other agent:
+#       ae_db      →  /app/autoearn.db   (SQLite, WAL mode, concurrent-safe)
+#       ae_output  →  /app/output/       (generated articles, code, proposals…)
+#   - Is resource-capped (256 MB RAM, 0.5 CPU) so one rogue agent can't starve others
+#   - Inherits AI API keys from the .env file (create from .env.example)
+#
+# The dashboard service runs on port 4200 and shows live status of all 21 agents.
+
+version: "3.9"
+
+x-agent-base: &agent-base
+  image: autoearn:latest
+  build:
+    context: .
+    dockerfile: Dockerfile
+  restart: always
+  env_file: .env
+  volumes:
+    - ae_db:/app/autoearn.db
+    - ae_output:/app/output
+    # Mount agent definitions read-write so self-modification persists across restarts
+    - ae_agents:/app/council
+    - ae_agents_teams:/app/teams
+    - ae_agents_qc:/app/qc
+  networks:
+    - ae_net
+  deploy:
+    resources:
+      limits:
+        memory: 256m
+        cpus: "0.5"
+  healthcheck:
+    test: ["CMD-SHELL", "test -f /proc/1/status"]
+    interval: 30s
+    timeout: 5s
+    retries: 3
+
+# ---------------------------------------------------------------------------
+# Council (5 agents — strategic layer, run every 4 h)
+# ---------------------------------------------------------------------------
+services:
+  ceo:
+    <<: *agent-base
+    container_name: ae_ceo
+    environment:
+      AGENT_NAME: ceo
+
+  cfo:
+    <<: *agent-base
+    container_name: ae_cfo
+    environment:
+      AGENT_NAME: cfo
+
+  cmo:
+    <<: *agent-base
+    container_name: ae_cmo
+    environment:
+      AGENT_NAME: cmo
+
+  cto:
+    <<: *agent-base
+    container_name: ae_cto
+    environment:
+      AGENT_NAME: cto
+
+  strategist:
+    <<: *agent-base
+    container_name: ae_strategist
+    environment:
+      AGENT_NAME: strategist
+
+  # ---------------------------------------------------------------------------
+  # Content team (3 agents)
+  # ---------------------------------------------------------------------------
+  researcher:
+    <<: *agent-base
+    container_name: ae_researcher
+    environment:
+      AGENT_NAME: researcher
+
+  writer:
+    <<: *agent-base
+    container_name: ae_writer
+    environment:
+      AGENT_NAME: writer
+
+  editor:
+    <<: *agent-base
+    container_name: ae_editor
+    environment:
+      AGENT_NAME: editor
+
+  # ---------------------------------------------------------------------------
+  # Dev team (3 agents)
+  # ---------------------------------------------------------------------------
+  designer:
+    <<: *agent-base
+    container_name: ae_designer
+    environment:
+      AGENT_NAME: designer
+
+  coder:
+    <<: *agent-base
+    container_name: ae_coder
+    environment:
+      AGENT_NAME: coder
+
+  reviewer:
+    <<: *agent-base
+    container_name: ae_reviewer
+    environment:
+      AGENT_NAME: reviewer
+
+  # ---------------------------------------------------------------------------
+  # Market team (3 agents)
+  # ---------------------------------------------------------------------------
+  analyst:
+    <<: *agent-base
+    container_name: ae_analyst
+    environment:
+      AGENT_NAME: analyst
+
+  trader:
+    <<: *agent-base
+    container_name: ae_trader
+    environment:
+      AGENT_NAME: trader
+
+  publisher:
+    <<: *agent-base
+    container_name: ae_publisher
+    environment:
+      AGENT_NAME: publisher
+
+  # ---------------------------------------------------------------------------
+  # Outreach team (3 agents)
+  # ---------------------------------------------------------------------------
+  scout:
+    <<: *agent-base
+    container_name: ae_scout
+    environment:
+      AGENT_NAME: scout
+
+  proposer:
+    <<: *agent-base
+    container_name: ae_proposer
+    environment:
+      AGENT_NAME: proposer
+
+  closer:
+    <<: *agent-base
+    container_name: ae_closer
+    environment:
+      AGENT_NAME: closer
+
+  # ---------------------------------------------------------------------------
+  # QC agents (4 agents — gate every team's output)
+  # ---------------------------------------------------------------------------
+  content_qc:
+    <<: *agent-base
+    container_name: ae_content_qc
+    environment:
+      AGENT_NAME: content_qc
+
+  dev_qc:
+    <<: *agent-base
+    container_name: ae_dev_qc
+    environment:
+      AGENT_NAME: dev_qc
+
+  market_qc:
+    <<: *agent-base
+    container_name: ae_market_qc
+    environment:
+      AGENT_NAME: market_qc
+
+  outreach_qc:
+    <<: *agent-base
+    container_name: ae_outreach_qc
+    environment:
+      AGENT_NAME: outreach_qc
+
+  # ---------------------------------------------------------------------------
+  # Dashboard (FastAPI — port 4200)
+  # ---------------------------------------------------------------------------
+  dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ae_dashboard
+    restart: always
+    env_file: .env
+    command: ["python", "-m", "uvicorn", "dashboard.app:create_app", "--factory", "--host", "0.0.0.0", "--port", "4200"]
+    ports:
+      - "4200:4200"
+    volumes:
+      - ae_db:/app/autoearn.db
+      - ae_output:/app/output
+      - ae_agents:/app/council
+      - ae_agents_teams:/app/teams
+      - ae_agents_qc:/app/qc
+    networks:
+      - ae_net
+    depends_on:
+      - ceo
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4200/api/agents"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+# ---------------------------------------------------------------------------
+# Volumes — named, persist across restarts
+# ---------------------------------------------------------------------------
+volumes:
+  ae_db:
+    driver: local
+  ae_output:
+    driver: local
+  ae_agents:
+    driver: local
+  ae_agents_teams:
+    driver: local
+  ae_agents_qc:
+    driver: local
+
+# ---------------------------------------------------------------------------
+# Network — private bridge; dashboard is the only port exposed to the host
+# ---------------------------------------------------------------------------
+networks:
+  ae_net:
+    driver: bridge

@@ -739,6 +739,9 @@
       <button :class="tab==='skills'&&'active'" @click="tab='skills';drawerOpen=false">
         <span class="ico">🧩</span> Skills
       </button>
+      <button :class="tab==='containers'&&'active'" @click="tab='containers';drawerOpen=false">
+        <span class="ico">🐳</span> Containers
+      </button>
       <button :class="tab==='activity'&&'active'" @click="tab='activity';drawerOpen=false">
         <span class="ico">📊</span> Activity
       </button>
@@ -755,6 +758,11 @@
       total revenue · <span x-text="agents.length"></span> agents
     </div>
     <div class="stat">AI: <b x-text="providers.join(', ')||'—'"></b></div>
+    <div class="stat" x-show="containers.length">
+      <div class="sbox" @click="tab='containers';drawerOpen=false" style="cursor:pointer">
+        🐳 <span x-text="containers.filter(c=>c.status.includes('Up')||c.status.includes('running')).length"></span>/<span x-text="containers.length"></span> containers up
+      </div>
+    </div>
     <div class="stat" x-show="sandboxes.containers&&sandboxes.containers.length">
       <div class="sbox">🐳 <span x-text="sandboxes.containers.length"></span> sandbox<span x-text="sandboxes.containers.length!==1?'es':''"></span> running</div>
     </div>
@@ -781,7 +789,7 @@
     <!-- Top bar -->
     <div class="topbar">
       <button class="hamburger" @click="drawerOpen=!drawerOpen" aria-label="Open menu">☰</button>
-      <h2 x-text="{chat:'Chat',org:'Organization',skills:'Skills',activity:'Activity',computer:'Sandboxes & Computer Use'}[tab]"></h2>
+      <h2 x-text="{chat:'Chat',org:'Organization',skills:'Skills',containers:'Containers',activity:'Activity',computer:'Sandboxes & Computer Use'}[tab]"></h2>
       <div class="who" x-show="tab==='chat'">→ <b x-text="chatAgent"></b></div>
     </div>
 
@@ -899,6 +907,74 @@
             <div x-show="skillOut[s.name]" style="margin-top:10px">
               <pre x-text="skillOut[s.name]"></pre>
             </div>
+          </div>
+        </template>
+      </div>
+    </div>
+
+    <!-- ════ CONTAINERS ════ -->
+    <div class="content" x-show="tab==='containers'">
+      <div class="pad">
+        <!-- Mode banner -->
+        <div class="card" style="margin-bottom:16px;padding:14px 18px;display:flex;align-items:center;gap:12px;">
+          <span style="font-size:22px" x-text="execMode==='container'?'🐳':'🧵'"></span>
+          <div>
+            <div style="font-weight:600;font-size:13px" x-text="execMode==='container'?'Container mode — each agent runs in its own Linux container, forever':'Thread mode — agents share a single process (install Docker + build image for containers)'"></div>
+            <div style="font-size:11px;color:var(--mut);margin-top:2px">
+              <template x-if="execMode==='container'">
+                <span>Each container has 256 MB RAM · 0.5 CPU · restart:always · shared SQLite DB</span>
+              </template>
+              <template x-if="execMode!=='container'">
+                <span>Run: <code>docker build -t autoearn:latest .</code> then restart to use containers</span>
+              </template>
+            </div>
+          </div>
+        </div>
+
+        <!-- Container grid -->
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;">
+          <template x-for="c in containers" :key="c.container">
+            <div class="card" style="padding:14px;position:relative;">
+              <!-- Status dot -->
+              <div style="position:absolute;top:14px;right:14px;">
+                <span
+                  style="display:inline-block;width:9px;height:9px;border-radius:50%;"
+                  :style="c.status.includes('Up')||c.status.includes('running')?'background:var(--acc2)':'background:var(--warn)'">
+                </span>
+              </div>
+              <!-- Agent name -->
+              <div style="font-weight:600;font-size:14px;margin-bottom:4px;" x-text="c.agent||(c.container.replace(/^ae_/,''))"></div>
+              <div style="font-size:11px;color:var(--mut);font-family:monospace;" x-text="c.container"></div>
+              <!-- Status -->
+              <div style="font-size:12px;margin-top:6px;padding:4px 8px;border-radius:5px;display:inline-block;"
+                   :style="(c.status.includes('Up')||c.status.includes('running'))?'background:#0d3a28;color:var(--acc2)':'background:#3a1515;color:var(--warn)'"
+                   x-text="c.status">
+              </div>
+              <!-- Size / thread info -->
+              <div x-show="c.size&&c.size!=='—'" style="font-size:11px;color:var(--mut);margin-top:4px;" x-text="c.size"></div>
+              <!-- Actions -->
+              <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap;">
+                <button class="btn sm" @click="viewLogs(c.agent||(c.container.replace(/^ae_/,'')))">📋 Logs</button>
+                <button class="btn sm" @click="trigger(c.agent||(c.container.replace(/^ae_/,'')))">▶ Run now</button>
+                <button class="btn sm" @click="chatAgent=(c.agent||(c.container.replace(/^ae_/,'')));tab='chat'">💬 Chat</button>
+              </div>
+            </div>
+          </template>
+          <template x-if="!containers.length">
+            <div class="empty" style="grid-column:1/-1;text-align:center;padding:40px;color:var(--mut)">
+              No containers found. Build the image and run <code>docker compose up -d</code> or start <code>main.py</code> with Docker available.
+            </div>
+          </template>
+        </div>
+
+        <!-- Log viewer -->
+        <template x-if="logAgent">
+          <div style="margin-top:20px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+              <b style="font-size:13px">📋 Logs — <span x-text="logAgent"></span></b>
+              <button class="btn sm" @click="logAgent=null">✕ Close</button>
+            </div>
+            <pre style="background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:14px;font-size:11px;line-height:1.6;max-height:400px;overflow-y:auto;white-space:pre-wrap;" x-text="logContent||'Loading…'"></pre>
           </div>
         </template>
       </div>
@@ -1034,6 +1110,9 @@
     <button :class="tab==='skills'&&'active'" @click="tab='skills'">
       <span class="bn-ico">🧩</span>Skills
     </button>
+    <button :class="tab==='containers'&&'active'" @click="tab='containers'">
+      <span class="bn-ico">🐳</span>Containers
+    </button>
     <button :class="tab==='activity'&&'active'" @click="tab='activity'">
       <span class="bn-ico">📊</span>Activity
     </button>
@@ -1134,6 +1213,11 @@
       skillOut: {},
       sandboxes: { containers: [], browsers: [] },
       sandboxOut: {},
+      /* ── Container mode state ── */
+      containers: [],
+      execMode: 'thread',
+      logAgent: null,
+      logContent: '',
       /* ── New state ── */
       networkInfo: { url: '', local_ip: '', port: 4200 },
       drawerOpen: false,
@@ -1151,13 +1235,15 @@
 
       /* ── Data fetching ── */
       async refresh() {
-        const [a, r, b, l, h, sb] = await Promise.all([
+        const [a, r, b, l, h, sb, ct, md] = await Promise.all([
           fetch('/api/agents').then(x => x.json()).catch(() => []),
           fetch('/api/revenue').then(x => x.json()).catch(() => ({ total_usd: 0, by_source: [] })),
           fetch('/api/messages?limit=30').then(x => x.json()).catch(() => []),
           fetch('/api/logs?limit=60').then(x => x.json()).catch(() => []),
           fetch('/api/health').then(x => x.json()).catch(() => ({})),
           fetch('/api/sandboxes').then(x => x.json()).catch(() => ({ containers: [], browsers: [] })),
+          fetch('/api/containers').then(x => x.json()).catch(() => []),
+          fetch('/api/mode').then(x => x.json()).catch(() => ({ mode: 'thread' })),
         ]);
         this.agents = a;
         this.revenue = r;
@@ -1165,6 +1251,8 @@
         this.logs = l;
         this.providers = h.providers || [];
         this.sandboxes = sb;
+        this.containers = ct;
+        this.execMode = md.mode || 'thread';
         if (this.selected) this.selected = a.find(x => x.name === this.selected.name) || this.selected;
       },
 
@@ -1304,6 +1392,18 @@
         if (!confirm('Remove skill "' + n + '"?')) return;
         await fetch('/api/skills/' + n, { method: 'DELETE' });
         this.loadSkills();
+      },
+
+      /* ── Containers ── */
+      async viewLogs(agentName) {
+        this.logAgent = agentName;
+        this.logContent = '';
+        try {
+          const d = await fetch('/api/agents/' + agentName + '/logs?lines=100').then(x => x.json());
+          this.logContent = d.logs || '(no logs yet)';
+        } catch (e) {
+          this.logContent = 'Error fetching logs: ' + e;
+        }
       },
 
       /* ── Sandboxes ── */

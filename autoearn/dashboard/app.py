@@ -16,6 +16,7 @@ from pydantic import BaseModel
 
 from core import ai_client, connectors, database as db, message_bus, providers, sandbox, skills
 from core.chat import Chat
+from core.container_orchestrator import ContainerOrchestrator
 from core.toolkit.computer import active_browsers
 
 TEMPLATE = Path(__file__).resolve().parent / "templates" / "index.html"
@@ -200,6 +201,48 @@ def create_app(orchestrator) -> FastAPI:
             "url": f"http://{local_ip}:{port}",
             "websocket_url": f"ws://{local_ip}:{port}/ws",
         }
+
+    # ---- Execution mode ------------------------------------------------
+    @app.get("/api/mode")
+    def mode() -> dict:
+        is_container = isinstance(orchestrator, ContainerOrchestrator)
+        return {
+            "mode": "container" if is_container else "thread",
+            "description": getattr(app.state, "mode", "thread"),
+        }
+
+    # ---- Container orchestrator endpoints (container mode only) --------
+    @app.get("/api/containers")
+    def containers() -> list:
+        if isinstance(orchestrator, ContainerOrchestrator):
+            return orchestrator.container_statuses()
+        # Thread mode: synthesise virtual "containers" from agent status
+        status = db.all_status()
+        return [
+            {
+                "container": f"ae_{a.name}",
+                "status": "thread (no Docker)",
+                "size": "—",
+                "agent": a.name,
+            }
+            for a in manager.enabled()
+        ]
+
+    @app.get("/api/agents/{name}/logs")
+    def agent_logs(name: str, lines: int = 80) -> dict:
+        if manager.get(name) is None:
+            raise HTTPException(404, f"no such agent '{name}'")
+        if isinstance(orchestrator, ContainerOrchestrator):
+            logs = orchestrator.agent_logs(name, lines=lines)
+        else:
+            # Thread mode: return recent DB activity for this agent
+            rows = db.recent_activity(limit=lines)
+            logs = "\n".join(
+                f"[{r['ts']}] {r['action']}: {r['detail']}"
+                for r in rows
+                if r.get("agent") == name
+            )
+        return {"name": name, "logs": logs}
 
     # ---- Sandboxes + Computer use --------------------------------------
     @app.get("/api/sandboxes")
