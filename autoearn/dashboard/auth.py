@@ -50,5 +50,17 @@ def valid_cookie(value: str | None) -> bool:
     return bool(value) and hmac.compare_digest(value, session_token())
 
 
+def valid_bearer(authorization: str | None) -> bool:
+    """Accept `Authorization: Bearer <session_token>` (used by home connectors)."""
+    if not auth_enabled():
+        return True
+    if not authorization:
+        return False
+    parts = authorization.split()
+    if len(parts) == 2 and parts[0].lower() == "bearer":
+        return hmac.compare_digest(parts[1], session_token())
+    return False
+
+
 def is_public_path(path: str) -> bool:
     return any(path == p or path.startswith(p) for p in _PUBLIC_PREFIXES)

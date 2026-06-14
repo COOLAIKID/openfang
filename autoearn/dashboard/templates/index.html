@@ -376,6 +376,12 @@
       transition: color .15s, border-color .15s;
     }
     .signout-btn:hover { color: var(--txt); border-color: var(--mut); }
+    .mini-input {
+      flex: 1; min-width: 0; font-size: 12px; color: var(--txt);
+      background: #0e1116; border: 1px solid var(--line); border-radius: 8px;
+      padding: 6px 9px; outline: none;
+    }
+    .mini-input:focus { border-color: var(--acc); }
 
     /* Content pane */
     .content {
@@ -1616,6 +1622,58 @@
           </div>
         </div>
 
+        <!-- Your computers (home connector) -->
+        <div class="section-label" style="margin-bottom:12px;">
+          Your computers
+          <div class="help-wrap" x-data="{open:false}">
+            <button class="help-btn" :class="open&&'open'" @click.stop="open=!open">?</button>
+            <div class="help-pop" x-show="open">Connect your own computer so the dashboard can run agents and tasks on it — even from your phone. On your computer run the "Connect this computer" command; it dials out to this dashboard, so it works behind any home Wi-Fi with nothing to set up.</div>
+          </div>
+        </div>
+        <div class="ws-grid" style="margin-bottom:8px;">
+          <template x-for="m in machines" :key="m.name">
+            <div class="ws-card">
+              <div class="ws-card-name">💻 <span x-text="m.name"></span></div>
+              <div class="ws-card-status" :class="m.online?'running':'stopped'">
+                <span class="ws-running-dot" x-show="m.online"></span>
+                <span x-text="m.online?'Connected':'Offline'"></span>
+              </div>
+              <div style="font-size:11px;color:var(--mut);margin-top:4px;" x-text="machineInfo(m)"></div>
+              <div class="ws-actions" x-show="m.online">
+                <input class="mini-input" type="text" placeholder="Run a command on this computer…"
+                       x-model="cmd[m.name]" @keydown.enter="sendCmd(m.name)">
+                <button class="btn sm" @click="sendCmd(m.name)">Run</button>
+              </div>
+            </div>
+          </template>
+          <div class="ws-card" x-show="!machines.length" style="text-align:center;">
+            <div style="font-size:13px;color:var(--mut);">No computers connected yet.</div>
+            <div style="font-size:11.5px;color:var(--mut);margin-top:8px;">On your computer, run:</div>
+            <code style="display:block;font-size:11px;background:#0e1116;border:1px solid var(--line);border-radius:8px;padding:8px;margin-top:6px;word-break:break-all;">./connect-to-cloud.sh</code>
+          </div>
+        </div>
+
+        <!-- Recent jobs run on your computers -->
+        <div x-show="jobs.length" style="margin-bottom:22px;">
+          <div class="section-label" style="margin-bottom:8px;">Tasks sent to your computers</div>
+          <div class="card">
+            <template x-for="j in jobs" :key="j.id">
+              <div class="tl-item" :class="j.status==='done'?'done':(j.status==='error'?'error':'running')" style="padding:9px 14px;">
+                <div class="tl-rail"><span class="tl-dot" :class="j.status==='done'?'done':(j.status==='error'?'error':'running')">
+                  <span x-show="j.status==='running'||j.status==='pending'" class="tl-spin"></span>
+                  <span x-show="j.status==='done'">✓</span>
+                  <span x-show="j.status==='error'">!</span>
+                </span></div>
+                <div class="tl-body">
+                  <div class="tl-top"><span class="tl-who" x-text="j.machine"></span><span class="tl-time" x-text="j.kind"></span></div>
+                  <div class="tl-title" x-text="j.payload"></div>
+                  <div class="tl-detail" x-show="j.result" x-text="(j.result||'').slice(0,300)"></div>
+                </div>
+              </div>
+            </template>
+          </div>
+        </div>
+
         <!-- Workspace cards -->
         <div class="section-label" style="margin-bottom:12px;">
           Worker environments
@@ -1904,6 +1962,9 @@
       showWelcome: false,
       authEnabled: false,
       tasks: [],
+      machines: [],
+      jobs: [],
+      cmd: {},
 
       /* ── Computed ── */
       get activeWorkers() {
@@ -1922,16 +1983,38 @@
         fetch('/api/auth').then(x => x.json()).then(d => this.authEnabled = !!d.enabled).catch(() => {});
         this.refresh();
         this.loadTasks();
+        this.loadComputers();
         this.loadChat();
         this.loadSkills();
         this.loadNetwork();
         setInterval(() => this.refresh(), 5000);
         // Faster poll just for the live timeline so "doing → done" feels instant.
         setInterval(() => this.loadTasks(), 2000);
+        setInterval(() => this.loadComputers(), 3000);
       },
 
       async loadTasks() {
         this.tasks = await fetch('/api/tasks?limit=40').then(x => x.json()).catch(() => this.tasks);
+      },
+
+      async loadComputers() {
+        this.machines = await fetch('/api/runner/machines').then(x => x.json()).catch(() => this.machines);
+        this.jobs = await fetch('/api/runner/jobs?limit=12').then(x => x.json()).catch(() => this.jobs);
+      },
+      machineInfo(m) {
+        try { const i = JSON.parse(m.info||'{}');
+          return [i.os, i.docker ? 'Docker ready' : 'No Docker', 'Python '+(i.python||'?')].filter(Boolean).join(' · ');
+        } catch (_) { return ''; }
+      },
+      async sendCmd(name) {
+        const payload = (this.cmd[name]||'').trim();
+        if (!payload) return;
+        this.cmd[name] = '';
+        await fetch('/api/runner/exec', {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ machine:name, kind:'shell', payload })
+        }).catch(() => {});
+        this.loadComputers();
       },
 
       taskTime(t) {

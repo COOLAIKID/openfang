@@ -53,6 +53,23 @@ class LoginBody(BaseModel):
     password: str = ""
 
 
+class RunnerRegister(BaseModel):
+    name: str
+    info: str = ""
+
+
+class RunnerResult(BaseModel):
+    job_id: int
+    status: str = "done"
+    result: str = ""
+
+
+class RunnerExec(BaseModel):
+    machine: str
+    kind: str = "shell"   # shell | agent
+    payload: str = ""
+
+
 def create_app(orchestrator) -> FastAPI:
     app = FastAPI(title="AutoEarn", docs_url="/docs")
     manager = orchestrator.manager
@@ -69,6 +86,8 @@ def create_app(orchestrator) -> FastAPI:
         if not auth.auth_enabled() or auth.is_public_path(request.url.path):
             return await call_next(request)
         if auth.valid_cookie(request.cookies.get(auth.COOKIE)):
+            return await call_next(request)
+        if auth.valid_bearer(request.headers.get("authorization")):
             return await call_next(request)
         # Not signed in: API calls get 401, pages get sent to /login.
         if request.url.path.startswith("/api/"):
@@ -321,6 +340,39 @@ def create_app(orchestrator) -> FastAPI:
                 if r.get("agent") == name
             )
         return {"name": name, "logs": logs}
+
+    # ---- Home connector: run agents / tasks on your own computer -------
+    # Your computer dials *out* to the dashboard (works behind any router) and
+    # picks up jobs. All endpoints are protected by the same password (bearer
+    # token), so only your machines can connect.
+    @app.post("/api/runner/register")
+    def runner_register(body: RunnerRegister) -> dict:
+        db.register_machine(body.name, body.info)
+        return {"ok": True}
+
+    @app.get("/api/runner/poll")
+    def runner_poll(machine: str) -> dict:
+        db.register_machine(machine)            # poll doubles as a heartbeat
+        job = db.claim_next_job(machine)
+        return job or {}
+
+    @app.post("/api/runner/result")
+    def runner_result(body: RunnerResult) -> dict:
+        db.complete_job(body.job_id, body.status, body.result)
+        return {"ok": True}
+
+    @app.get("/api/runner/machines")
+    def runner_machines() -> list:
+        return db.recent_machines()
+
+    @app.get("/api/runner/jobs")
+    def runner_jobs(limit: int = 30, machine: str | None = None) -> list:
+        return db.recent_jobs(limit=limit, machine=machine)
+
+    @app.post("/api/runner/exec")
+    def runner_exec(body: RunnerExec) -> dict:
+        job_id = db.enqueue_job(body.machine, body.kind, body.payload)
+        return {"job_id": job_id}
 
     # ---- Sandboxes + Computer use --------------------------------------
     @app.get("/api/sandboxes")

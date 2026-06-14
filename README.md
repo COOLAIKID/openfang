@@ -53,6 +53,20 @@ you want a sign-in prompt.
 
 ---
 
+## 🔗 Connect your own computer to the cloud dashboard
+
+Want your cloud dashboard (on your phone) to run agents and tasks on your *home
+computer*? Connect it once:
+
+```bash
+./connect-to-cloud.sh        # macOS / Linux   (connect-to-cloud.bat on Windows)
+```
+
+It asks for your dashboard URL + password, then dials **out** to the cloud — so
+it works behind any home Wi-Fi with no ports to open. Leave it running. Your
+computer now appears under **Private Workspaces → Your computers**, where you can
+run a command on it or have agents run there — straight from your phone.
+
 ## What you'll see
 
 - **Chat** — talk to your AI team, give direction, ask what they're working on.
