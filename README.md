@@ -7,9 +7,23 @@ chat, and steer.
 
 ---
 
-## ▶️ Open it in 2 minutes
+## ▶️ Open it right now — 3 taps on your phone
 
-### 📱 On your phone (runs 24/7 in the cloud)
+**Open in GitHub Codespace** (free, no install, works on any phone or computer):
+
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/coolaikid/openfang?quickstart=1)
+
+1. Tap the button above → **Create new codespace** (GitHub account required — free).
+2. Wait ~2 minutes while it sets up.
+3. A public HTTPS link appears automatically — **that's your dashboard URL**. Bookmark it or add it to your home screen.
+
+> Add your AI keys (Groq, etc.) in the **Capabilities** tab once you're in.
+> The Codespace sleeps after 30 min of inactivity but wakes up the moment you
+> open the link again. For always-on 24/7, use the Render deploy below.
+
+---
+
+## ☁️ Always-on 24/7 cloud (stays awake even when you're offline)
 
 1. Tap **Deploy to Render** (free):
 
@@ -21,12 +35,14 @@ chat, and steer.
    - **`GROQ_API_KEY`** — a free AI key from <https://console.groq.com>.
 4. When it's live, open the URL it gives you → **sign in** → **Add to Home Screen**.
 
-That's it. It's now an app icon on your phone, your workers run 24/7, and it
-even opens (showing the last data) when you have no signal.
+That's it. Workers run 24/7, and the app even opens (showing the last data)
+when you have no signal.
 
-👉 Full walkthrough with pictures of each step: **[RUN_ON_YOUR_PHONE.md](RUN_ON_YOUR_PHONE.md)**
+👉 Full walkthrough with pictures: **[RUN_ON_YOUR_PHONE.md](RUN_ON_YOUR_PHONE.md)**
 
-### 💻 On your computer (a real app icon)
+---
+
+## 💻 On your computer (a real app icon)
 
 Install it once and you get an **AutoEarn icon** in your Applications / Start
 Menu. Click it and the dashboard opens in your browser — that's it.
@@ -48,8 +64,8 @@ Now find **AutoEarn** in your apps and click it. The first click sets things up
 instant. No password is needed for local use; set `AUTOEARN_PASSWORD` first if
 you want a sign-in prompt.
 
-> **Want it on your phone over home Wi-Fi instead of the cloud?** Run the command
-> above, then open `http://<your-computer-ip>:4200` on your phone — same app.
+> **Want it on your phone over home Wi-Fi?** Run the command above, then open
+> `http://<your-computer-ip>:4200` on your phone — same app.
 
 ---
 
@@ -66,6 +82,8 @@ It asks for your dashboard URL + password, then dials **out** to the cloud — s
 it works behind any home Wi-Fi with no ports to open. Leave it running. Your
 computer now appears under **Private Workspaces → Your computers**, where you can
 run a command on it or have agents run there — straight from your phone.
+
+---
 
 ## What you'll see
 
