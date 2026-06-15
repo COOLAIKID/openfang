@@ -5,13 +5,12 @@
   "onCreateCommand": "pip install -q -r /workspaces/openfang/autoearn/requirements-cloud.txt",
 
   "postStartCommand": "python3 /workspaces/openfang/.devcontainer/start.py",
-  "postAttachCommand": "python3 /workspaces/openfang/.devcontainer/start.py",
 
   "forwardPorts": [4200],
   "portsAttributes": {
     "4200": {
       "label": "AutoEarn Dashboard",
-      "onAutoForward": "openBrowser",
+      "onAutoForward": "notify",
       "visibility": "public",
       "protocol": "http"
     }
