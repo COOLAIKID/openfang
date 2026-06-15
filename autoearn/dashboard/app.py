@@ -122,7 +122,11 @@ def create_app(orchestrator) -> FastAPI:
 
     @app.get("/", response_class=HTMLResponse)
     def index() -> str:
-        return TEMPLATE.read_text(encoding="utf-8")
+        # Never cache the shell — ensures browsers and proxies always fetch fresh.
+        return HTMLResponse(
+            content=TEMPLATE.read_text(encoding="utf-8"),
+            headers={"Cache-Control": "no-store"},
+        )
 
     @app.get("/manifest.webmanifest")
     def manifest() -> Response:
