@@ -27,11 +27,9 @@
     });
   </script>
   <script>
-    // Register the offline helper. Safe to fail (e.g. plain http on LAN).
+    // Register cleanup SW — unregisters itself and wipes all old caches.
     if ("serviceWorker" in navigator) {
-      window.addEventListener("load", () => {
-        navigator.serviceWorker.register("/sw.js").catch(() => {});
-      });
+      navigator.serviceWorker.register("/sw.js").catch(() => {});
     }
     // If the session expires, bounce to the sign-in screen automatically.
     (function () {
@@ -44,13 +42,11 @@
         return res;
       };
     })();
-    // If Alpine fails to load (CDN block, slow network, etc.) remove x-cloak
-    // after 4 s so the page is never a permanent white screen.
+    // Safety net: if Alpine somehow fails, remove the splash after 6 s.
     setTimeout(function () {
-      document.querySelectorAll("[x-cloak]").forEach(function (el) {
-        el.removeAttribute("x-cloak");
-      });
-    }, 4000);
+      const s = document.getElementById("ae-splash");
+      if (s) s.remove();
+    }, 6000);
   </script>
   <style>
     /* ─── Design tokens ─────────────────────────────────────────────── */
@@ -1246,7 +1242,16 @@
   </style>
 </head>
 <body>
-<div class="layout" x-data="app()" x-init="init()" x-cloak>
+<!-- Splash shown while Alpine initialises. Alpine removes it via x-init. -->
+<div id="ae-splash" style="
+  position:fixed;inset:0;z-index:9999;
+  background:#0b0d11;
+  display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;">
+  <div style="font-size:28px;font-weight:800;color:#1bd39a;letter-spacing:-.02em">Auto<span style="color:#e4eaf4">Earn</span></div>
+  <div style="color:#7d8898;font-size:14px">Loading your AI team…</div>
+</div>
+
+<div class="layout" x-data="app()" x-init="document.getElementById('ae-splash').remove(); init()">
 
   <!-- ── Welcome overlay (first-run / no AI connected) ── -->
   <template x-if="showWelcome">
