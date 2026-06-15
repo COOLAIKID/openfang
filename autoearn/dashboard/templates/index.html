@@ -35,6 +35,13 @@
         return res;
       };
     })();
+    // If Alpine fails to load (CDN block, slow network, etc.) remove x-cloak
+    // after 4 s so the page is never a permanent white screen.
+    setTimeout(function () {
+      document.querySelectorAll("[x-cloak]").forEach(function (el) {
+        el.removeAttribute("x-cloak");
+      });
+    }, 4000);
   </script>
   <style>
     /* ─── Design tokens ─────────────────────────────────────────────── */
