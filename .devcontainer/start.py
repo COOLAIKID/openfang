@@ -42,11 +42,11 @@ def pip_install():
 
 
 def start_server():
-    os.chdir(os.path.join(REPO, "autoearn"))
+    server_dir = os.path.join(REPO, "autoearn")
     env = {**os.environ, "HOST": "0.0.0.0", "PORT": "4200"}
     with open(LOG, "a") as lf:
         proc = subprocess.Popen(
-            [sys.executable, "main.py"],
+            [sys.executable, os.path.join(server_dir, "main.py")],
             env=env, stdout=lf, stderr=lf,
             start_new_session=True,
         )
@@ -61,7 +61,8 @@ print(f"{DIM}{'─'*52}{RST}\n")
 if server_healthy():
     print(f"  Server already running ✓\n")
 else:
-    subprocess.run(["pkill", "-f", "python main.py"], capture_output=True)
+    # Kill any stale server. Pattern matches "/workspaces/openfang/autoearn/main.py"
+    subprocess.run(["pkill", "-f", "autoearn/main.py"], capture_output=True)
     time.sleep(1)
 
     # Attempt 1: start immediately (deps installed by onCreateCommand)
@@ -82,7 +83,7 @@ else:
     # Attempt 2: deps might be missing — install then retry
     if not ready:
         print(f"\n  Server not ready — installing/updating deps…")
-        subprocess.run(["pkill", "-f", "python main.py"], capture_output=True)
+        subprocess.run(["pkill", "-f", "autoearn/main.py"], capture_output=True)
         pip_install()
         proc = start_server()
         print(f"  Restarted (PID {proc.pid})")
