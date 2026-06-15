@@ -4,8 +4,8 @@
 
   "onCreateCommand": "pip install -q -r /workspaces/openfang/autoearn/requirements-cloud.txt",
 
-  "postStartCommand": "bash /workspaces/openfang/.devcontainer/start.sh",
-  "postAttachCommand": "bash /workspaces/openfang/.devcontainer/start.sh",
+  "postStartCommand": "python3 /workspaces/openfang/.devcontainer/start.py",
+  "postAttachCommand": "python3 /workspaces/openfang/.devcontainer/start.py",
 
   "forwardPorts": [4200],
   "portsAttributes": {
