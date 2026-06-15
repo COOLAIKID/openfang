@@ -3,14 +3,13 @@
 
 Key design:
 - Start the server FIRST so port 4200 is up within seconds.
-- Run pip install in background only if server fails to start (deps missing).
+- Run pip install only if server fails to start (deps missing).
 - Never block on anything that can hang.
 """
 import os
 import subprocess
 import sys
 import time
-import threading
 import urllib.request
 
 REPO   = "/workspaces/openfang"
@@ -54,33 +53,25 @@ def start_server():
     return proc
 
 
-def wait_healthy(seconds=30):
-    for _ in range(seconds):
-        if server_healthy():
-            return True
-        time.sleep(1)
-    return False
-
-
 print(f"\n{DIM}{'─'*52}{RST}")
 print(f"{BOLD}  AutoEarn — starting up …{RST}")
 print(f"{DIM}{'─'*52}{RST}\n")
 
-# ── Already running? Skip everything ─────────────────────────────────
+# Already running? Skip everything.
 if server_healthy():
     print(f"  Server already running ✓\n")
 else:
     subprocess.run(["pkill", "-f", "python main.py"], capture_output=True)
     time.sleep(1)
 
-    # ── Attempt 1: start immediately (deps from onCreateCommand) ─────
+    # Attempt 1: start immediately (deps installed by onCreateCommand)
     print(f"  Starting server…", flush=True)
     proc = start_server()
     print(f"  Server process started (PID {proc.pid})")
     print(f"  Waiting for dashboard", end="", flush=True)
 
     ready = False
-    for _ in range(20):          # 20s fast window
+    for _ in range(20):
         if server_healthy():
             ready = True
             break
@@ -88,9 +79,9 @@ else:
         time.sleep(1)
     print()
 
-    # ── Attempt 2: deps might be missing — install then retry ────────
+    # Attempt 2: deps might be missing — install then retry
     if not ready:
-        print(f"\n  Server not yet ready — installing/updating deps…")
+        print(f"\n  Server not ready — installing/updating deps…")
         subprocess.run(["pkill", "-f", "python main.py"], capture_output=True)
         pip_install()
         proc = start_server()
@@ -112,7 +103,7 @@ else:
         except Exception:
             pass
 
-# ── Set port to public ────────────────────────────────────────────────
+# Set port to public
 name = os.environ.get("CODESPACE_NAME", "")
 if name:
     try:
@@ -124,7 +115,7 @@ if name:
     except Exception:
         pass
 
-# ── Print big clickable link ──────────────────────────────────────────
+# Print big clickable link
 url = f"https://{name}-4200.app.github.dev" if name else "http://localhost:4200"
 bar = "═" * (len(url) + 10)
 print(f"\n{BOLD}{G}{bar}{RST}")
