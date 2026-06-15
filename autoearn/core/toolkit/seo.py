@@ -14,7 +14,7 @@ from urllib.parse import quote, urljoin, urlparse
 import requests
 from bs4 import BeautifulSoup
 
-OUTPUT_DIR = Path("/home/user/openfang/autoearn/output")
+OUTPUT_DIR = Path(__file__).resolve().parent.parent.parent / "output"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 HEADERS = {

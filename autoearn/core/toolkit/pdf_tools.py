@@ -14,7 +14,7 @@ from typing import Any
 # Output directory
 # ---------------------------------------------------------------------------
 
-OUTPUT_DIR = Path("/home/user/openfang/autoearn/output")
+OUTPUT_DIR = Path(__file__).resolve().parent.parent.parent / "output"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 # ---------------------------------------------------------------------------
